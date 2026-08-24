@@ -85,6 +85,15 @@ DATABASES = {
 }
 
 
+import sys
+
+if "pytest" in sys.modules:
+    DATABASES["default"]["HOST"] = "localhost"
+    DATABASES["default"]["PORT"] = "5432"
+    DATABASES["default"]["NAME"] = "test"
+    DATABASES["default"]["USER"] = "postgres"
+    DATABASES["default"]["PASSWORD"] = ""
+
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
