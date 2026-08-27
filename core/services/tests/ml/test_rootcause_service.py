@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from ml.root_cause_service import RootCauseService
+from ml.rootcause_service import RootCauseService
 
 @pytest.fixture
 def mock_repos():

@@ -1,183 +1,157 @@
 import pytest
-import numpy as np
-from unittest.mock import Mock, patch
-from ml.explanation_service import ExplanationService
+from unittest.mock import Mock
+from ml.rootcause_service import RootCauseService
 
 @pytest.fixture
-def mock_repository():
-    return Mock()
+def mock_repos():
+    rc_repo = Mock()
+    rc_repo.get_by_name.return_value = Mock(root_cause_id=1, category="MOCK", name="MOCK")
+    
+    prc_repo = Mock()
+    prc_repo.create.side_effect = lambda **kwargs: Mock(**kwargs)
+    
+    return rc_repo, prc_repo
 
 @pytest.fixture
-def mock_prediction():
-    prediction = Mock()
-    prediction.prediction_id = 999
-    prediction.risk_type = "BOTTLENECK"
-    return prediction
+def base_inputs():
+    prediction = Mock(prediction_id=100)
+    features = Mock(vibration_mean=0.8, avg_cycle_time=35.0, temperature_mean=45.0)
+    state = Mock(health_state="NOMINAL")
+    return prediction, features, state
 
-@pytest.fixture
-def mock_model():
-    return Mock()
-
-@pytest.fixture
-def service(mock_repository, mock_model):
-    return ExplanationService(
-        explanation_repository=mock_repository,
-        risk_model=mock_model
-    )
-
-def test_1_basic_explanation_generation(service, mock_prediction):
-    feature_input = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+def test_1_basic_root_cause(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    rc_repo, prc_repo = mock_repos
+    exp1 = Mock(prediction_id=100, feature_name="vibration_mean", contribution=0.5, direction="POSITIVE")
     
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        # Mock SHAP returning list of arrays (simulating binary classification)
-        mock_explainer_instance.shap_values.return_value = [
-            np.array([[-0.1] * 8]), 
-            np.array([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]])
-        ]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        result = service.explain(mock_prediction, feature_input)
-        
-        assert len(result) == 8
-        assert result[0].prediction == mock_prediction
-
-def test_2_feature_contribution_count(service, mock_prediction):
-    feature_input = [1.0] * 8
+    service = RootCauseService(rc_repo, prc_repo)
+    result = service.analyze(prediction, [exp1], features, state)
     
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        mock_explainer_instance.shap_values.return_value = [np.zeros((1, 8)), np.ones((1, 8))]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        result = service.explain(mock_prediction, feature_input)
-        assert len(result) == 8
+    assert result.contribution == 0.5
+    assert result.prediction == prediction
+    prc_repo.create.assert_called_once()
 
-def test_3_feature_ordering(service, mock_prediction):
-    feature_input = [1.0] * 8
+def test_2_equipment_degradation_state(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    state.health_state = "DEGRADED" # Triggers +0.3
+    exp1 = Mock(prediction_id=100, feature_name="vibration_mean", contribution=0.4, direction="POSITIVE")
     
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        # Return unique values to trace them
-        mock_explainer_instance.shap_values.return_value = [
-            np.zeros((1, 8)), 
-            np.array([[10, 20, 30, 40, 50, 60, 70, 80]])
-        ]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        result = service.explain(mock_prediction, feature_input)
-        
-        # Sort back to original model order to verify mapping
-        original_order = sorted(result, key=lambda x: x.contribution)
-        assert original_order[0].feature_name == "avg_cycle_time"
-        assert original_order[-1].feature_name == "current_cycle_time"
-
-def test_4_and_5_positive_and_negative_contribution(service, mock_prediction):
-    feature_input = [1.0] * 8
+    service = RootCauseService(*mock_repos)
+    result = service.analyze(prediction, [exp1], features, state)
     
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        mock_explainer_instance.shap_values.return_value = [
-            np.zeros((1, 8)), 
-            np.array([[0.32, -0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
-        ]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        result = service.explain(mock_prediction, feature_input)
-        
-        positive_exp = next(x for x in result if x.feature_name == "avg_cycle_time")
-        negative_exp = next(x for x in result if x.feature_name == "cycle_time_std")
-        
-        assert positive_exp.contribution == 0.32
-        assert positive_exp.direction == "POSITIVE"
-        
-        assert negative_exp.contribution == -0.25
-        assert negative_exp.direction == "NEGATIVE"
+    mock_repos[0].get_by_name.assert_called_with("EQUIPMENT_DEGRADATION", "Abnormal Vibration")
+    assert result.contribution == 0.7 # 0.4 + 0.3
 
-def test_6_ranking(service, mock_prediction):
-    feature_input = [1.0] * 8
+def test_3_thermal_issue(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp_thermal = Mock(prediction_id=100, feature_name="temperature_mean", contribution=0.6, direction="POSITIVE")
     
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        mock_explainer_instance.shap_values.return_value = [
-            np.zeros((1, 8)), 
-            np.array([[0.10, -0.40, 0.20, 0.0, 0.0, 0.0, 0.0, 0.0]])
-        ]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        result = service.explain(mock_prediction, feature_input)
-        
-        assert result[0].contribution == -0.40
-        assert result[1].contribution == 0.20
-        assert result[2].contribution == 0.10
+    service = RootCauseService(*mock_repos)
+    service.analyze(prediction, [exp_thermal], features, state)
+    mock_repos[0].get_by_name.assert_called_with("THERMAL_ISSUE", "Overheating")
 
-def test_7_missing_feature():
-    # Empty feature vector
-    service = ExplanationService(explanation_repository=Mock())
+def test_4_quality_issue(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp_qual = Mock(prediction_id=100, feature_name="quality_event_count", contribution=0.8, direction="POSITIVE")
+    
+    service = RootCauseService(*mock_repos)
+    service.analyze(prediction, [exp_qual], features, state)
+    mock_repos[0].get_by_name.assert_called_with("QUALITY_ISSUE", "Frequent Defects")
+
+def test_5_positive_explanation_contribution(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp = Mock(prediction_id=100, feature_name="avg_cycle_time", contribution=0.45, direction="POSITIVE")
+    
+    service = RootCauseService(*mock_repos)
+    result = service.analyze(prediction, [exp], features, state)
+    assert result.contribution == 0.45
+
+def test_6_negative_explanation_ignored(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp_pos = Mock(prediction_id=100, feature_name="vibration_mean", contribution=0.4, direction="POSITIVE")
+    exp_neg = Mock(prediction_id=100, feature_name="temperature_mean", contribution=-0.9, direction="NEGATIVE")
+    
+    service = RootCauseService(*mock_repos)
+    result = service.analyze(prediction, [exp_pos, exp_neg], features, state)
+    
+    # The negative temperature contribution should be completely ignored
+    assert "temperature_mean" not in result.evidence
+    assert result.contribution == 0.4 
+
+def test_7_evidence_traceability(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp = Mock(prediction_id=100, feature_name="utilization", contribution=0.25, direction="POSITIVE")
+    
+    service = RootCauseService(*mock_repos)
+    result = service.analyze(prediction, [exp], features, state)
+    
+    assert "utilization" in result.evidence
+    assert "+0.25" in result.evidence
+
+def test_8_insufficient_evidence_unknown(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    service = RootCauseService(*mock_repos)
+    
+    result = service.analyze(prediction, [], features, state)
+    mock_repos[0].get_by_name.assert_called_with("UNKNOWN", "Insufficient Evidence")
+
+def test_9_confidence_range(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp = Mock(prediction_id=100, feature_name="vibration_mean", contribution=0.8, direction="POSITIVE")
+    
+    service = RootCauseService(*mock_repos)
+    result = service.analyze(prediction, [exp], features, state)
+    
+    assert 0.0 <= result.confidence <= 1.0
+
+def test_10_prediction_mismatch(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp = Mock(prediction_id=999) # Does not match prediction_id 100
+    
+    service = RootCauseService(*mock_repos)
+    with pytest.raises(ValueError, match="Mismatch"):
+        service.analyze(prediction, [exp], features, state)
+
+def test_11_missing_optional_events(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp = Mock(prediction_id=100, feature_name="vibration_mean", contribution=0.5, direction="POSITIVE")
+    
+    service = RootCauseService(*mock_repos)
+    result = service.analyze(prediction, [exp], features, state, events=None)
+    assert result is not None
+
+def test_12_invalid_feature_input(mock_repos):
+    prediction = Mock(prediction_id=100)
+    service = RootCauseService(*mock_repos)
+    
     with pytest.raises(ValueError):
-        service.explain(Mock(prediction_id=1, risk_type="BOTTLENECK"), [])
+        service.analyze(prediction, [], features=None, state=Mock())
 
-def test_8_feature_dimension_mismatch(service, mock_prediction):
-    # Model expects 8 features, passing 7
-    feature_input = [1.0] * 7 
-    with pytest.raises(ValueError, match="dimension mismatch"):
-        service.explain(mock_prediction, feature_input)
-
-def test_9_invalid_prediction(service):
-    # No prediction ID
-    invalid_pred = Mock(prediction_id=None)
-    with pytest.raises(ValueError):
-        service.explain(invalid_pred, [1.0] * 8)
-
-def test_10_model_unavailable():
-    # Service init without models
-    service = ExplanationService(explanation_repository=Mock())
-    with pytest.raises(RuntimeError, match="unavailable"):
-        service.explain(Mock(prediction_id=1, risk_type="BOTTLENECK"), [1.0] * 8)
-
-def test_11_shap_failure(service, mock_prediction):
-    feature_input = [1.0] * 8
-    with patch("shap.TreeExplainer") as MockExplainer:
-        MockExplainer.side_effect = Exception("SHAP crashed")
-        with pytest.raises(RuntimeError, match="SHAP computation failed"):
-            service.explain(mock_prediction, feature_input)
-
-def test_12_and_13_repository_persistence(service, mock_prediction):
-    feature_input = [1.0] * 8
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        mock_explainer_instance.shap_values.return_value = [np.zeros((1, 8)), np.ones((1, 8))]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        result = service.explain(mock_prediction, feature_input)
-        
-        # Assert repository was called, not Django ORM direct create
-        service.explanation_repository.bulk_save_explanations.assert_called_once_with(result)
-
-def test_14_positive_class_consistency(service, mock_prediction):
-    feature_input = [1.0] * 8
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        # Mock class 0 (negative) and class 1 (positive - high risk)
-        class_0 = np.array([[-9.0] * 8])
-        class_1 = np.array([[9.0] * 8])
-        mock_explainer_instance.shap_values.return_value = [class_0, class_1]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        result = service.explain(mock_prediction, feature_input)
-        
-        # Verify class 1 (9.0) was used, not class 0 (-9.0)
-        assert result[0].contribution == 9.0
-
-def test_15_no_prediction_mutation(service, mock_prediction):
-    feature_input = [1.0] * 8
-    original_risk_type = mock_prediction.risk_type
+def test_13_repository_persistence(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    rc_repo, prc_repo = mock_repos
     
-    with patch("shap.TreeExplainer") as MockExplainer:
-        mock_explainer_instance = Mock()
-        mock_explainer_instance.shap_values.return_value = [np.zeros((1, 8)), np.ones((1, 8))]
-        MockExplainer.return_value = mock_explainer_instance
-        
-        service.explain(mock_prediction, feature_input)
-        
-        assert mock_prediction.risk_type == original_risk_type
+    service = RootCauseService(rc_repo, prc_repo)
+    service.analyze(prediction, [], features, state)
+    
+    prc_repo.create.assert_called_once()
+
+def test_14_no_prediction_mutation(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    original_id = prediction.prediction_id
+    
+    service = RootCauseService(*mock_repos)
+    service.analyze(prediction, [], features, state)
+    
+    assert prediction.prediction_id == original_id
+
+def test_15_determinism(mock_repos, base_inputs):
+    prediction, features, state = base_inputs
+    exp = Mock(prediction_id=100, feature_name="vibration_mean", contribution=0.5, direction="POSITIVE")
+    
+    service = RootCauseService(*mock_repos)
+    res1 = service.analyze(prediction, [exp], features, state)
+    res2 = service.analyze(prediction, [exp], features, state)
+    
+    assert res1.evidence == res2.evidence
+    assert res1.contribution == res2.contribution

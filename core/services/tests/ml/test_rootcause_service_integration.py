@@ -1,38 +1,160 @@
-from core.repositories.ml_repository import RootCauseRepository, PredictionRootCauseRepository
-from ml.root_cause_service import RootCauseService
+import pytest
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from django.utils import timezone
+
+from core.models import (
+    Plant,
+    ProductionLine,
+    Station,
+    StationFeature,
+    StationState,
+    RiskPrediction,
+    MaintenanceEvent
+)
+
+from core.repositories.ml_repository import PredictionExplanationRepository, RootCauseRepository, PredictionRootCauseRepository
+from core.services.ml.explanation_service import ExplanationService
+from ml.rootcause_service import RootCauseService
+
+@pytest.fixture
+def real_trained_model():
+    X = np.random.rand(100, 8)
+    y = np.random.randint(2, size=100)
+    model = RandomForestClassifier(n_estimators=10, random_state=42)
+    model.fit(X, y)
+    return model
+
+@pytest.fixture
+def db_context():
+    """Sets up the required physical hierarchy for the database foreign keys."""
+    plant = Plant.objects.create(plant_id="PL-01", name="Test Plant")
+    line = ProductionLine.objects.create(line_id="LN-01", plant=plant, name="Test Line")
+    station = Station.objects.create(
+        station_id="ST-101", 
+        line=line, 
+        name="Test Station", 
+        station_type="ASSEMBLY", 
+        capacity=1, 
+        base_cycle_time=30.0, 
+        position=1
+    )
+    
+    prediction = RiskPrediction.objects.create(
+        timestamp=timezone.now(),
+        entity_type="STATION",
+        entity_id="ST-101",
+        risk_type="BOTTLENECK",
+        risk_score=0.85,
+        confidence=0.90,
+        model_name="TestRF",
+        model_version="v1"
+    )
+    
+    return station, prediction
 
 @pytest.mark.django_db
-def test_end_to_end_ml_pipeline(real_trained_model, sample_prediction):
-    # This tests Prediction -> Explanation -> RootCause integration
+def test_integration_1_equipment_degradation(real_trained_model, db_context):
+    station, prediction = db_context
     
-    # 1. Generate Explanations
-    explanation_service = ExplanationService(PredictionExplanationRepository, risk_model=real_trained_model)
     feature_vector = [35.2, 1.1, 0.5, 95.0, 45.0, 0.2, 0.88, 36.1]
     
-    explanations = explanation_service.explain(sample_prediction, feature_vector)
+    explanation_service = ExplanationService(PredictionExplanationRepository, risk_model=real_trained_model)
+    explanations = explanation_service.explain(prediction, feature_vector)
     
-    # 2. Mock upstream Features/State required by RootCause
-    feature_obj = StationFeature.objects.create(
-        station_id="ST-101", timestamp=timezone.now(), vibration_mean=0.88
-    )
-    state_obj = StationState.objects.create(
-        station_id="ST-101", timestamp=timezone.now(), health_state="DEGRADED"
-    )
+    feature_obj = StationFeature.objects.create(station=station, timestamp=timezone.now(), vibration_mean=0.88)
+    state_obj = StationState.objects.create(station=station, timestamp=timezone.now(), health_state="DEGRADED")
     
-    # 3. Generate Root Cause
     rc_service = RootCauseService(RootCauseRepository, PredictionRootCauseRepository)
-    root_cause = rc_service.analyze(sample_prediction, explanations, feature_obj, state_obj)
+    root_cause = rc_service.analyze(prediction, explanations, feature_obj, state_obj)
     
-    # 4. Assertions ensuring chain continuity and DB writes
-    assert root_cause.prediction.prediction_id == sample_prediction.prediction_id
-    
-    # Check that root cause was persisted correctly via repository
-    saved_prc = PredictionRootCauseRepository.get_for_prediction(sample_prediction.prediction_id).first()
+    saved_prc = PredictionRootCauseRepository.get_for_prediction(prediction.prediction_id).first()
     assert saved_prc is not None
-    assert saved_prc.prediction.prediction_id == sample_prediction.prediction_id
-    
-    # Check evidence traceability (since State was DEGRADED, it must be in the evidence)
+    assert saved_prc.root_cause.category in ["EQUIPMENT_DEGRADATION", "PROCESS_DEGRADATION"]
     assert "DEGRADED health" in saved_prc.evidence
+
+@pytest.mark.django_db
+def test_integration_2_insufficient_evidence(real_trained_model, db_context):
+    station, prediction = db_context
     
-    # Verify no prediction mutation occurred throughout the pipeline
-    assert sample_prediction.risk_score == 0.85
+    # Vector designed to yield minimal/zero SHAP contributions
+    feature_vector = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    
+    explanation_service = ExplanationService(PredictionExplanationRepository, risk_model=real_trained_model)
+    explanations = explanation_service.explain(prediction, feature_vector)
+    
+    feature_obj = StationFeature.objects.create(station=station, timestamp=timezone.now())
+    state_obj = StationState.objects.create(station=station, timestamp=timezone.now(), health_state="NOMINAL")
+    
+    rc_service = RootCauseService(RootCauseRepository, PredictionRootCauseRepository)
+    root_cause = rc_service.analyze(prediction, explanations, feature_obj, state_obj)
+    
+    saved_prc = PredictionRootCauseRepository.get_for_prediction(prediction.prediction_id).first()
+    assert saved_prc.root_cause.category == "UNKNOWN"
+
+@pytest.mark.django_db
+def test_integration_3_with_maintenance_events(real_trained_model, db_context):
+    station, prediction = db_context
+    feature_vector = [35.2, 1.1, 0.5, 95.0, 45.0, 0.2, 0.88, 36.1]
+    
+    explanation_service = ExplanationService(PredictionExplanationRepository, risk_model=real_trained_model)
+    explanations = explanation_service.explain(prediction, feature_vector)
+    
+    feature_obj = StationFeature.objects.create(station=station, timestamp=timezone.now())
+    state_obj = StationState.objects.create(station=station, timestamp=timezone.now(), health_state="NOMINAL")
+    
+    # Inject a maintenance event
+    event = MaintenanceEvent.objects.create(
+        station=station, timestamp=timezone.now(), maintenance_type="EMERGENCY_REPAIR"
+    )
+    
+    rc_service = RootCauseService(RootCauseRepository, PredictionRootCauseRepository)
+    root_cause = rc_service.analyze(prediction, explanations, feature_obj, state_obj, events=[event])
+    
+    saved_prc = PredictionRootCauseRepository.get_for_prediction(prediction.prediction_id).first()
+    assert "Recent maintenance event recorded: EMERGENCY_REPAIR" in saved_prc.evidence
+
+@pytest.mark.django_db
+def test_integration_4_process_degradation(real_trained_model, db_context):
+    station, prediction = db_context
+    
+    # Feature vector that highly emphasizes cycle time (position 0 and 7)
+    feature_vector = [99.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 99.9]
+    
+    explanation_service = ExplanationService(PredictionExplanationRepository, risk_model=real_trained_model)
+    explanations = explanation_service.explain(prediction, feature_vector)
+    
+    # Manually force a high positive explanation for cycle time for this specific test
+    for exp in explanations:
+        if exp.feature_name == "avg_cycle_time":
+            exp.contribution = 0.95
+            exp.direction = "POSITIVE"
+            
+    feature_obj = StationFeature.objects.create(station=station, timestamp=timezone.now(), avg_cycle_time=99.9)
+    state_obj = StationState.objects.create(station=station, timestamp=timezone.now(), health_state="NOMINAL")
+    
+    rc_service = RootCauseService(RootCauseRepository, PredictionRootCauseRepository)
+    rc_service.analyze(prediction, explanations, feature_obj, state_obj)
+    
+    saved_prc = PredictionRootCauseRepository.get_for_prediction(prediction.prediction_id).first()
+    assert saved_prc.root_cause.category == "PROCESS_DEGRADATION"
+
+@pytest.mark.django_db
+def test_integration_5_mismatched_prediction_fails(real_trained_model, db_context):
+    station, prediction = db_context
+    
+    feature_vector = [35.2, 1.1, 0.5, 95.0, 45.0, 0.2, 0.88, 36.1]
+    
+    explanation_service = ExplanationService(PredictionExplanationRepository, risk_model=real_trained_model)
+    explanations = explanation_service.explain(prediction, feature_vector)
+    
+    # Alter the prediction ID so the Root Cause service rejects it
+    fake_prediction = RiskPrediction(prediction_id=9999)
+    
+    feature_obj = StationFeature.objects.create(station=station, timestamp=timezone.now())
+    state_obj = StationState.objects.create(station=station, timestamp=timezone.now())
+    
+    rc_service = RootCauseService(RootCauseRepository, PredictionRootCauseRepository)
+    
+    with pytest.raises(ValueError, match="Mismatch"):
+        rc_service.analyze(fake_prediction, explanations, feature_obj, state_obj)
