@@ -2,7 +2,7 @@ import pytest
 
 from core.models import Plant
 from core.services.exceptions import NotFoundError
-from core.services.plant_service import PlantService
+from core.services.master.plant_service import PlantService
 
 
 @pytest.fixture

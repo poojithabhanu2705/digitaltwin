@@ -94,7 +94,7 @@ class VehicleStationHistoryRepository:
                 "vehicle",
                 "station",
             )
-            .filter(history_id=history_id)
+            .filter(id=history_id)
             .first()
         )
 
@@ -154,7 +154,7 @@ class VehicleStationHistoryRepository:
     def update_exit_time(history_id, exit_time):
         history = (
             VehicleStationHistory.objects
-            .filter(history_id=history_id)
+            .filter(id=history_id)
             .first()
         )
 
@@ -238,7 +238,7 @@ class QualityEventRepository:
                 "origin_station",
                 "detection_station",
             )
-            .filter(event_id=event_id)
+            .filter(quality_event_id=event_id)
             .first()
         )
 
@@ -324,7 +324,7 @@ class MaintenanceEventRepository:
                 "station",
                 "equipment",
             )
-            .filter(event_id=event_id)
+            .filter(maintenance_id=event_id)
             .first()
         )
 

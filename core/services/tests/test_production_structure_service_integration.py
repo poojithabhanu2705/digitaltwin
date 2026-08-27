@@ -2,7 +2,7 @@ import pytest
 
 from core.models import Plant
 from core.services.exceptions import NotFoundError, ValidationError
-from core.services.production_structure_service import (
+from core.services.master.production_structure_service import (
     ProductionStructureService,
 )
 

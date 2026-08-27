@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from core.services.plant_service import PlantService
+from core.services.master.plant_service import PlantService
 from core.services.exceptions import NotFoundError
 
 
