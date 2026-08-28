@@ -3,7 +3,7 @@
 import pytest
 from core.models import RiskPrediction, Station, StationDependency, Vehicle, VehicleState, VehicleExposure
 from core.repositories.risk_repository import RiskRepository
-from ml.risk_propagation_service import RiskPropagationService
+from risk_propagation_service import RiskPropagationService
 from django.utils import timezone
 
 @pytest.mark.django_db

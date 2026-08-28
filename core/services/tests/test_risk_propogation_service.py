@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from ml.risk_propagation_service import RiskPropagationService
+from risk_propagation_service import RiskPropagationService
 from core.models import VehicleExposure
 
 class MockPrediction:
