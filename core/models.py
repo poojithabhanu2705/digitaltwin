@@ -1661,6 +1661,9 @@ class Intervention(models.Model):
         return self.name
 
 
+
+
+
 class Recommendation(models.Model):
     recommendation_id = models.BigAutoField(
         primary_key=True
@@ -1711,5 +1714,38 @@ class Recommendation(models.Model):
             models.Index(
                 fields=["timestamp", "status"],
                 name="recommendation_status_time_idx"
+            )
+        ]
+        
+class InterventionExecution(models.Model):
+    execution_id = models.BigAutoField(
+        primary_key=True
+    )
+
+    timestamp = models.DateTimeField(
+        db_index=True
+    )
+
+    recommendation = models.OneToOneField(
+        Recommendation,
+        on_delete=models.CASCADE,
+        related_name="execution"
+    )
+
+    status = models.CharField(
+        max_length=30,
+        default="SUCCESS"
+    )
+
+    execution_notes = models.TextField(
+        blank=True
+    )
+
+    class Meta:
+        db_table = "intervention_executions"
+        indexes = [
+            models.Index(
+                fields=["timestamp", "status"],
+                name="interv_exec_time_idx"
             )
         ]
