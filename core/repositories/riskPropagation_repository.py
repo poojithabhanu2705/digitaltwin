@@ -1,10 +1,16 @@
+# core/repositories/risk_repository.py
+
 from core.models import (
     StationDependency,
     VehicleExposure,
+    VehicleState,
 )
 
-
 class RiskRepository:
+    """
+    Authoritative repository for managing risk propagation graph dependencies,
+    vehicle state lookups, and exposure persistence.
+    """
 
     # ============================================================
     # STATION DEPENDENCIES
@@ -93,6 +99,21 @@ class RiskRepository:
     def bulk_save_dependencies(dependencies):
         return StationDependency.objects.bulk_create(
             dependencies
+        )
+
+    # ============================================================
+    # VEHICLE STATES (Augmented for Propagation)
+    # ============================================================
+
+    @staticmethod
+    def get_vehicles_at_station(station_id):
+        return (
+            VehicleState.objects
+            .filter(
+                current_station_id=station_id,
+                status="ACTIVE"
+            )
+            .select_related("vehicle")
         )
 
     # ============================================================
