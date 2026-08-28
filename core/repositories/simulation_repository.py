@@ -1,4 +1,4 @@
-from core.models import SimulationRun
+from core.models import SimulationOutcome, SimulationRun
 
 
 class SimulationRepository:
@@ -194,4 +194,24 @@ class SimulationRepository:
                 horizon_minutes__gte=minimum_horizon_minutes
             )
             .order_by("-timestamp")
+        )
+    # ============================================================
+    # OUTCOME PERSISTENCE
+    # ============================================================
+
+    @staticmethod
+    def save_outcomes(outcomes):
+        """Bulk creates SimulationOutcome records."""
+        from django.db import transaction
+        with transaction.atomic():
+            return SimulationOutcome.objects.bulk_create(outcomes)
+
+    @staticmethod
+    def get_outcomes_for_run(simulation_id):
+        """Retrieves outcomes for a specific simulation run."""
+        return (
+            SimulationOutcome.objects
+            .filter(simulation_run_id=simulation_id)
+            .select_related("station")
+            .order_by("station__position")
         )
