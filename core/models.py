@@ -1575,7 +1575,43 @@ class SimulationRun(models.Model):
                 name="sim_plant_time_idx"
             )
         ]
+class SimulationOutcome(models.Model):
+    outcome_id = models.BigAutoField(
+        primary_key=True
+    )
 
+    simulation_run = models.ForeignKey(
+        SimulationRun,
+        on_delete=models.CASCADE,
+        related_name="outcomes"
+    )
+
+    station = models.ForeignKey(
+        Station,
+        on_delete=models.CASCADE,
+        related_name="simulation_outcomes"
+    )
+
+    simulated_throughput = models.FloatField()
+    
+    simulated_risk = models.FloatField()
+    
+    throughput_delta = models.FloatField()
+    
+    risk_delta = models.FloatField()
+
+    is_bottleneck = models.BooleanField(
+        default=False
+    )
+
+    class Meta:
+        db_table = "simulation_outcomes"
+        indexes = [
+            models.Index(
+                fields=["simulation_run", "station"],
+                name="sim_outcome_run_station_idx"
+            )
+        ]
 
 
 
