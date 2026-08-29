@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import Mock
 from datetime import datetime
 
-from decision.intervention_service import InterventionService
+from core.services.intervention_service import InterventionService
 from core.models import Recommendation, InterventionExecution
 from core.services.exceptions import (
     NotFoundError,
@@ -24,10 +24,11 @@ def service(mock_repo):
 
 @pytest.fixture
 def mock_recommendation():
-    rec = Mock(spec=Recommendation)
-    rec.recommendation_id = 1
-    rec.status = "PENDING"
-    rec.rationale = ""
+    rec = Recommendation(
+        recommendation_id=1,
+        status="PENDING",
+        rationale=""
+    )
     return rec
 
 def test_execute_intervention_success(service, mock_repo, mock_recommendation):

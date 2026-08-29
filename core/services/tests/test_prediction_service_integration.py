@@ -10,7 +10,7 @@ from core.models import (
     StationState, 
     RiskPrediction
 )
-from core.repositories.prediction_repository import PredictionRepository
+from core.repositories.ml_repository import PredictionRepository
 from core.services.ml.prediction_service import PredictionService
 
 # This fixture creates dummy data in your test database before the test runs

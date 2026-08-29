@@ -3,12 +3,18 @@ import math
 from datetime import datetime
 from unittest.mock import Mock, call
 from django.utils import timezone
-from simulation_service import SimulationService, ValidationError
+from django.db.models.base import ModelState
+from core.services.simulation_service import SimulationService, ValidationError
 from core.models import SimulationOutcome, SimulationRun
 
 @pytest.fixture
 def mock_repos():
     return Mock(), Mock(), Mock()
+
+def create_mock_run():
+    run = Mock(spec=SimulationRun)
+    run._state = ModelState()
+    return run
 
 @pytest.fixture
 def sim_service(mock_repos):
@@ -65,7 +71,7 @@ def test_normal_simulation_single_station(sim_service, mock_repos):
     risk_repo.get_active_predictions.return_value = []
     risk_repo.get_active_exposures.return_value = []
     
-    mock_run = Mock(spec=SimulationRun)
+    mock_run = create_mock_run()
     sim_repo.create_run.return_value = mock_run
 
     result = sim_service.simulate_scenario("P1", "L1", base_time, "Base", "WHAT_IF", {}, 60)
@@ -85,7 +91,7 @@ def test_simulation_with_intervention(sim_service, mock_repos):
     state_repo.get_station_state_history.return_value = [create_mock_state("ST-1", 100.0, 0.5)]
     risk_repo.get_active_predictions.return_value = []
     risk_repo.get_active_exposures.return_value = []
-    sim_repo.create_run.return_value = Mock(spec=SimulationRun)
+    sim_repo.create_run.return_value = create_mock_run()
 
     params = {"target_station_id": "ST-1", "risk_reduction_pct": 50.0, "capacity_modifier": 1.2}
     sim_service.simulate_scenario("P1", "L1", timezone.now(), "Intervention", "WHAT_IF", params, 60)
@@ -105,7 +111,7 @@ def test_downstream_propagated_risk_accumulation(sim_service, mock_repos):
         create_mock_exp("ST-2", 0.3),
         create_mock_exp("ST-2", 0.2) 
     ]
-    sim_repo.create_run.return_value = Mock()
+    sim_repo.create_run.return_value = create_mock_run()
 
     sim_service.simulate_scenario("P1", "L1", timezone.now(), "Risk", "WHAT_IF", {}, 60)
     
@@ -120,7 +126,7 @@ def test_maximum_valid_risk_cap(sim_service, mock_repos):
     state_repo.get_station_state_history.return_value = [create_mock_state("ST-1", 100.0, 0.9)]
     risk_repo.get_active_predictions.return_value = [create_mock_pred("ST-1", 0.9)]
     risk_repo.get_active_exposures.return_value = [create_mock_exp("ST-1", 0.5)]
-    sim_repo.create_run.return_value = Mock()
+    sim_repo.create_run.return_value = create_mock_run()
 
     sim_service.simulate_scenario("P1", "L1", timezone.now(), "MaxRisk", "WHAT_IF", {}, 60)
     
@@ -136,7 +142,7 @@ def test_input_immutability(sim_service, mock_repos):
     state_repo.get_station_state_history.return_value = [state]
     risk_repo.get_active_predictions.return_value = []
     risk_repo.get_active_exposures.return_value = []
-    sim_repo.create_run.return_value = Mock()
+    sim_repo.create_run.return_value = create_mock_run()
 
     params = {"target_station_id": "ST-1", "risk_reduction_pct": 100.0}
     sim_service.simulate_scenario("P1", "L1", timezone.now(), "Mut", "WHAT_IF", params, 60)

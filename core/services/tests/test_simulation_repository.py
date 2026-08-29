@@ -1,6 +1,6 @@
 import pytest
 from core.models import SimulationRun, SimulationOutcome, Plant, ProductionLine, Station
-from simulation_repository import SimulationRepository
+from core.repositories.simulation_repository import SimulationRepository
 from django.utils import timezone
 
 @pytest.mark.django_db

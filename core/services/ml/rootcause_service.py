@@ -52,9 +52,16 @@ class RootCauseService:
 
         # 2. Evaluate State Evidence
         if hasattr(state, "health_state") and state.health_state == "DEGRADED":
-            rc_key = ("EQUIPMENT_DEGRADATION", "General Equipment Degradation")
-            scores[rc_key] += 0.30
-            evidence_log[rc_key].append("Station state explicitly reports DEGRADED health.")
+            has_eq_deg = False
+            for rc_key in list(scores.keys()):
+                if rc_key[0] == "EQUIPMENT_DEGRADATION":
+                    scores[rc_key] += 0.30
+                    evidence_log[rc_key].append("Station state explicitly reports DEGRADED health.")
+                    has_eq_deg = True
+            if not has_eq_deg:
+                rc_key = ("EQUIPMENT_DEGRADATION", "General Equipment Degradation")
+                scores[rc_key] += 0.30
+                evidence_log[rc_key].append("Station state explicitly reports DEGRADED health.")
 
         # 3. Evaluate Event Evidence (Optional)
         if events:

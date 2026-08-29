@@ -5,8 +5,8 @@ from django.utils import timezone
 
 from core.models import RiskPrediction, PredictionExplanation
 from core.repositories.ml_repository import PredictionExplanationRepository
-from ml.explanation_service import ExplanationService
-from ml.prediction_service import PredictionService
+from core.services.ml.explanation_service import ExplanationService
+from core.services.ml.prediction_service import PredictionService
 
 @pytest.fixture
 def real_trained_model():

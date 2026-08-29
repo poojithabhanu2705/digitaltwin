@@ -1,9 +1,9 @@
 import pytest
 from django.utils import timezone
-from simulation_service import SimulationService
-from simulation_repository import SimulationRepository
+from core.services.simulation_service import SimulationService
+from core.repositories.simulation_repository import SimulationRepository
 from core.repositories.state_repository import StateRepository
-from ml.risk_repository import RiskRepository
+from core.repositories.riskPropagation_repository import RiskRepository
 from core.models import SimulationOutcome
 
 @pytest.mark.django_db

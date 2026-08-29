@@ -15,7 +15,7 @@ from core.models import (
 
 from core.repositories.ml_repository import PredictionExplanationRepository, RootCauseRepository, PredictionRootCauseRepository
 from core.services.ml.explanation_service import ExplanationService
-from ml.rootcause_service import RootCauseService
+from core.services.ml.rootcause_service import RootCauseService
 
 @pytest.fixture
 def real_trained_model():

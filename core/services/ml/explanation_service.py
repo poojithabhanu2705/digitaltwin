@@ -8,7 +8,7 @@ except ImportError:
     SHAP_AVAILABLE = False
 
 from core.models import PredictionExplanation
-from ml.prediction_service import PredictionService
+from core.services.ml.prediction_service import PredictionService
 
 logger = logging.getLogger(__name__)
 

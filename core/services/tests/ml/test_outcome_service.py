@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import Mock
 
-from ml.outcome_service import OutcomeService
+from core.services.ml.outcome_service import OutcomeService
 
 class MockPrediction:
     def __init__(self, pred_id, ts, ent_type, ent_id, risk_score, horizon):

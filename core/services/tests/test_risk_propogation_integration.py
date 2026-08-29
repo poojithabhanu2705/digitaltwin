@@ -1,9 +1,9 @@
 # tests/test_integration_risk_propagation.py
 
 import pytest
-from core.models import RiskPrediction, Station, StationDependency, Vehicle, VehicleState, VehicleExposure
-from core.repositories.risk_repository import RiskRepository
-from risk_propagation_service import RiskPropagationService
+from core.models import RiskPrediction, Station, StationDependency, Vehicle, VehicleState, VehicleExposure, Plant, ProductionLine
+from core.repositories.riskPropagation_repository import RiskRepository
+from core.services.riskPropogation_service import RiskPropagationService
 from django.utils import timezone
 
 @pytest.mark.django_db
@@ -11,13 +11,23 @@ class TestPropagationIntegration:
     
     @pytest.fixture
     def complex_graph(self):
+        plant = Plant.objects.create(
+            plant_id="PL-RISK-TEST",
+            name="Risk Propagation Plant",
+            location="Test Location",
+        )
+        line = ProductionLine.objects.create(
+            line_id="LINE-RISK-TEST",
+            plant=plant,
+            name="Risk Propagation Line",
+        )
         # A -> B -> D
         # A -> C -> D
         # D -> A (Cycle)
-        sA = Station.objects.create(station_id="A", capacity=1, base_cycle_time=1, position=1)
-        sB = Station.objects.create(station_id="B", capacity=1, base_cycle_time=1, position=2)
-        sC = Station.objects.create(station_id="C", capacity=1, base_cycle_time=1, position=3)
-        sD = Station.objects.create(station_id="D", capacity=1, base_cycle_time=1, position=4)
+        sA = Station.objects.create(station_id="A", line=line, name="Station A", station_type="ASSEMBLY", capacity=1, base_cycle_time=1, position=1)
+        sB = Station.objects.create(station_id="B", line=line, name="Station B", station_type="ASSEMBLY", capacity=1, base_cycle_time=1, position=2)
+        sC = Station.objects.create(station_id="C", line=line, name="Station C", station_type="ASSEMBLY", capacity=1, base_cycle_time=1, position=3)
+        sD = Station.objects.create(station_id="D", line=line, name="Station D", station_type="ASSEMBLY", capacity=1, base_cycle_time=1, position=4)
         
         StationDependency.objects.create(upstream_station=sA, downstream_station=sB, propagation_weight=0.8)
         StationDependency.objects.create(upstream_station=sA, downstream_station=sC, propagation_weight=0.5)
@@ -25,8 +35,8 @@ class TestPropagationIntegration:
         StationDependency.objects.create(upstream_station=sC, downstream_station=sD, propagation_weight=0.9)
         StationDependency.objects.create(upstream_station=sD, downstream_station=sA, propagation_weight=0.1) # Cycle
         
-        vB = Vehicle.objects.create(vehicle_id="V_B", arrival_time=timezone.now(), status="ACTIVE")
-        vD = Vehicle.objects.create(vehicle_id="V_D", arrival_time=timezone.now(), status="ACTIVE")
+        vB = Vehicle.objects.create(vehicle_id="V_B", line=line, variant="TEST-VARIANT", production_order="PO-B", arrival_time=timezone.now(), status="ACTIVE")
+        vD = Vehicle.objects.create(vehicle_id="V_D", line=line, variant="TEST-VARIANT", production_order="PO-D", arrival_time=timezone.now(), status="ACTIVE")
         
         VehicleState.objects.create(vehicle=vB, current_station=sB, status="ACTIVE", timestamp=timezone.now())
         VehicleState.objects.create(vehicle=vD, current_station=sD, status="ACTIVE", timestamp=timezone.now())

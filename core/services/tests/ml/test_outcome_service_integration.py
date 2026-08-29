@@ -6,9 +6,9 @@ from core.models import (
     Plant, ProductionLine, Station, Vehicle, QualityEvent, 
     RiskPrediction, PredictionOutcome
 )
-from core.repositories import PredictionOutcomeRepository, PredictionRepository
-from ml.prediction_service import PredictionService
-from ml.outcome_service import OutcomeService
+from core.repositories.ml_repository import PredictionOutcomeRepository, PredictionRepository
+from core.services.ml.prediction_service import PredictionService
+from core.services.ml.outcome_service import OutcomeService
 
 @pytest.mark.django_db
 class TestPipelineIntegration:

@@ -1,8 +1,8 @@
 # tests/test_risk_repository.py
 
 import pytest
-from core.models import StationDependency, VehicleExposure, VehicleState, Station, Vehicle, RiskPrediction
-from core.repositories.risk_repository import RiskRepository
+from core.models import StationDependency, VehicleExposure, VehicleState, Station, Vehicle, RiskPrediction, Plant, ProductionLine
+from core.repositories.riskPropagation_repository import RiskRepository
 from django.utils import timezone
 
 @pytest.mark.django_db
@@ -10,9 +10,42 @@ class TestRiskRepository:
     
     @pytest.fixture
     def setup_data(self):
-        s1 = Station.objects.create(station_id="S1", capacity=1, base_cycle_time=1, position=1)
-        s2 = Station.objects.create(station_id="S2", capacity=1, base_cycle_time=1, position=2)
-        v1 = Vehicle.objects.create(vehicle_id="V1", arrival_time=timezone.now(), status="ACTIVE")
+        plant = Plant.objects.create(
+            plant_id="PL-RISK-REPO",
+            name="Risk Repository Plant",
+            location="Test Location",
+        )
+        line = ProductionLine.objects.create(
+            line_id="LINE-RISK-REPO",
+            plant=plant,
+            name="Risk Repository Line",
+        )
+        s1 = Station.objects.create(
+            station_id="S1",
+            line=line,
+            name="Risk Station 1",
+            station_type="ASSEMBLY",
+            capacity=1,
+            base_cycle_time=1,
+            position=1,
+        )
+        s2 = Station.objects.create(
+            station_id="S2",
+            line=line,
+            name="Risk Station 2",
+            station_type="ASSEMBLY",
+            capacity=1,
+            base_cycle_time=1,
+            position=2,
+        )
+        v1 = Vehicle.objects.create(
+            vehicle_id="V1",
+            line=line,
+            variant="TEST-VARIANT",
+            production_order="PO-RISK-REPO",
+            arrival_time=timezone.now(),
+            status="ACTIVE",
+        )
         
         StationDependency.objects.create(upstream_station=s1, downstream_station=s2, propagation_weight=0.5)
         VehicleState.objects.create(vehicle=v1, current_station=s1, status="ACTIVE", timestamp=timezone.now())

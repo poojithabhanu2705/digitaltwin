@@ -6,8 +6,8 @@ from core.models import (
     Plant, ProductionLine, Station, SimulationRun, Intervention, 
     Recommendation, InterventionExecution
 )
-from decision.intervention_repository import InterventionRepository
-from decision.intervention_service import InterventionService
+from core.repositories.intervention_repository import InterventionRepository
+from core.services.intervention_service import InterventionService
 from core.services.exceptions import ConflictError, InvalidStateTransitionError
 
 @pytest.fixture

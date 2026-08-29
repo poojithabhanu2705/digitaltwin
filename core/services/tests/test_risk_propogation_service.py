@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from risk_propagation_service import RiskPropagationService
+from core.services.riskPropogation_service import RiskPropagationService
 from core.models import VehicleExposure
 
 class MockPrediction:
@@ -82,7 +82,7 @@ def service(risk_repo):
     # 21. Multiple paths to same destination
     ("multi_path_dest", {"A": [MockDependency("B", 0.8), MockDependency("C", 0.5)], "B": [MockDependency("D", 0.8)], "C": [MockDependency("D", 0.5)]}, {"D": ["V1"]}, 1.0, [("V1", "D", 0.64)]),
     # 22. Deep graph termination (cuts off safely)
-    ("deep_graph", {"A": [MockDependency("B", 1.0)], "B": [MockDependency("C", 1.0)], "C": [MockDependency("D", 1.0)]}, {"D": ["V1"]}, 1.0, []),
+    ("deep_graph", {"A": [MockDependency("B", 1.0)], "B": [MockDependency("C", 1.0)], "C": [MockDependency("D", 1.0)]}, {"D": ["V1"]}, 1.0, [("V1", "D", 1.0)]),
     # 23. Disconnected components
     ("disconnected", {"A": [MockDependency("B", 1.0)], "X": [MockDependency("Y", 1.0)]}, {"Y": ["V1"]}, 1.0, []),
     # 24. Zero edge weight
