@@ -28,34 +28,34 @@ class StateRepository:
     @staticmethod
     def get_station_state_history(
         station_id,
-        start_time,
-        end_time
+        start_time=None,
+        end_time=None
     ):
-        return (
-            StationState.objects
-            .filter(
-                station_id=station_id,
-                timestamp__gte=start_time,
-                timestamp__lte=end_time
-            )
-            .order_by("timestamp")
+        from django.db.models import Q
+        queryset = StationState.objects.filter(
+            Q(station_id=station_id) | Q(station__line_id=station_id)
         )
+        if start_time is not None:
+            queryset = queryset.filter(timestamp__gte=start_time)
+        if end_time is not None:
+            queryset = queryset.filter(timestamp__lte=end_time)
+        return queryset.order_by("timestamp")
 
     @staticmethod
     def get_station_state_history_latest_first(
         station_id,
-        start_time,
-        end_time
+        start_time=None,
+        end_time=None
     ):
-        return (
-            StationState.objects
-            .filter(
-                station_id=station_id,
-                timestamp__gte=start_time,
-                timestamp__lte=end_time
-            )
-            .order_by("-timestamp")
+        from django.db.models import Q
+        queryset = StationState.objects.filter(
+            Q(station_id=station_id) | Q(station__line_id=station_id)
         )
+        if start_time is not None:
+            queryset = queryset.filter(timestamp__gte=start_time)
+        if end_time is not None:
+            queryset = queryset.filter(timestamp__lte=end_time)
+        return queryset.order_by("-timestamp")
 
     @staticmethod
     def get_by_health_state(health_state):

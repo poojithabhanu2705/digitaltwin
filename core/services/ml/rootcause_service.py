@@ -25,7 +25,7 @@ class RootCauseService:
     def __init__(self, root_cause_repo, prediction_root_cause_repo):
         self.root_cause_repo = root_cause_repo
         self.prc_repo = prediction_root_cause_repo
-        self.min_confidence_threshold = 0.1
+        self.min_confidence_threshold = 0.20
 
     def analyze(self, prediction, explanations, features, state, events=None):
         """

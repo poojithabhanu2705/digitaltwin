@@ -1,18 +1,43 @@
 import pytest
 from django.utils import timezone
-from core.services.simulation_service import SimulationService
-from core.repositories.simulation_repository import SimulationRepository
+from simulation_service import SimulationService
+from simulation_repository import SimulationRepository
 from core.repositories.state_repository import StateRepository
-from core.repositories.riskPropagation_repository import RiskRepository
-from core.models import SimulationOutcome
+from ml.risk_repository import RiskRepository
+from core.models import Plant, ProductionLine, Station, StationState, SimulationOutcome
 
 @pytest.mark.django_db
 class TestSimulationIntegration:
     
     @pytest.fixture
     def setup_data(self):
-        # Setup Plant, Line, Station, State, Prediction, Exposure in DB
-        pass # Implementation assumes standard Django test fixtures
+        plant = Plant.objects.create(plant_id="P1", name="Plant 1")
+        line = ProductionLine.objects.create(line_id="L1", plant=plant, name="Line 1")
+        st1 = Station.objects.create(
+            station_id="ST-1", line=line, name="Station 1", 
+            station_type="ASSEMBLY", capacity=100, base_cycle_time=30.0, position=1
+        )
+        st2 = Station.objects.create(
+            station_id="ST-2", line=line, name="Station 2", 
+            station_type="ASSEMBLY", capacity=100, base_cycle_time=30.0, position=2
+        )
+        state1 = StationState.objects.create(
+            station=st1,
+            timestamp=timezone.now(),
+            health_state="NOMINAL",
+            health_risk=0.1,
+            throughput=100.0,
+            confidence=0.9
+        )
+        state2 = StationState.objects.create(
+            station=st2,
+            timestamp=timezone.now(),
+            health_state="NOMINAL",
+            health_risk=0.5,
+            throughput=100.0,
+            confidence=0.9
+        )
+        return plant, line, st1, st2, state1, state2
 
     def test_end_to_end_normal_simulation(self, setup_data):
         service = SimulationService(StateRepository(), RiskRepository(), SimulationRepository())
