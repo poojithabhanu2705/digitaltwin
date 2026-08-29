@@ -18,7 +18,14 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+import sys
+for p in [BASE_DIR, BASE_DIR / "core", BASE_DIR / "core" / "services", BASE_DIR / "core" / "repositories"]:
+    p_str = str(p)
+    if p_str not in sys.path:
+        sys.path.insert(0, p_str)
+
 load_dotenv(BASE_DIR / ".env")
+
 
 
 

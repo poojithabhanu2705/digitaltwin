@@ -230,3 +230,28 @@ class RiskRepository:
         return VehicleExposure.objects.bulk_create(
             exposures
         )
+
+    # ============================================================
+    # ACTIVE PREDICTIONS & EXPOSURES (For Simulation / Risk)
+    # ============================================================
+
+    @staticmethod
+    def get_active_predictions(line_id=None, timestamp=None):
+        from core.models import RiskPrediction, Station
+        queryset = RiskPrediction.objects.filter(entity_type="STATION")
+        if line_id:
+            station_ids = Station.objects.filter(line_id=line_id).values_list("station_id", flat=True)
+            queryset = queryset.filter(entity_id__in=station_ids)
+        if timestamp is not None:
+            queryset = queryset.filter(timestamp__lte=timestamp)
+        return queryset.order_by("-timestamp")
+
+    @staticmethod
+    def get_active_exposures(line_id=None, timestamp=None):
+        from core.models import VehicleExposure
+        queryset = VehicleExposure.objects.all()
+        if line_id:
+            queryset = queryset.filter(station__line_id=line_id)
+        if timestamp is not None:
+            queryset = queryset.filter(timestamp__lte=timestamp)
+        return queryset.order_by("-timestamp")

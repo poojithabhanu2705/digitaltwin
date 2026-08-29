@@ -39,7 +39,16 @@ class SimulationService:
         self._validate_parameters(parameters)
 
         # Retrieve Context
-        station_states = self.state_repo.get_station_state_history(line_id, base_state_timestamp, base_state_timestamp)
+        raw_states = self.state_repo.get_station_state_history(line_id, None, base_state_timestamp)
+        states_by_station = {}
+        for state in raw_states:
+            st_id = getattr(state, "station_id", None)
+            if st_id is None and hasattr(state, "station"):
+                st_id = getattr(state.station, "station_id", None)
+            key = st_id if st_id is not None else id(state)
+            states_by_station[key] = state
+        station_states = list(states_by_station.values())
+
         if not station_states:
             raise ValidationError(f"No current state found for line {line_id} at {base_state_timestamp}")
 

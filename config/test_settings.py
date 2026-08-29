@@ -1,10 +1,14 @@
 from .settings import *
+import sys
+from pathlib import Path
 
-DATABASES["default"] = {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": "test",
-    "USER": "postgres",
-    "PASSWORD": "postgres",
-    "HOST": "localhost",
-    "PORT": "5432",
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR / "core" / "services"))
+sys.path.insert(0, str(BASE_DIR / "core" / "repositories"))
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
+    }
 }

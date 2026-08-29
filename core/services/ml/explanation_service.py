@@ -94,12 +94,30 @@ class ExplanationService:
             logger.error(f"SHAP explanation generation failed: {e}")
             raise RuntimeError(f"SHAP computation failed: {e}")
 
+        # Extract underlying values if shap.Explanation object
+        if hasattr(shap_values_raw, "values"):
+            shap_values_raw = shap_values_raw.values
+
         # Map to the positive class (index 1) for binary classification
         if isinstance(shap_values_raw, list):
             positive_idx = 1 if len(shap_values_raw) > 1 else 0
-            return shap_values_raw[positive_idx][0]
+            raw = shap_values_raw[positive_idx]
+            return raw[0] if getattr(raw, 'ndim', 1) > 1 else raw
+        elif isinstance(shap_values_raw, np.ndarray):
+            if shap_values_raw.ndim == 3:
+                positive_idx = 1 if shap_values_raw.shape[2] > 1 else 0
+                return shap_values_raw[0, :, positive_idx]
+            elif shap_values_raw.ndim == 2:
+                return shap_values_raw[0]
+            elif shap_values_raw.ndim == 1:
+                return shap_values_raw
+            else:
+                return shap_values_raw.flatten()
         else:
-            return shap_values_raw[0]
+            arr = np.array(shap_values_raw)
+            if arr.ndim > 1:
+                return arr[0]
+            return arr
 
     def _construct_explanations(self, prediction, feature_names, contributions):
         if len(contributions) != len(feature_names):
@@ -107,15 +125,16 @@ class ExplanationService:
 
         explanations = []
         for name, contrib in zip(feature_names, contributions):
-            if not np.isfinite(contrib):
+            contrib_val = float(contrib)
+            if not np.isfinite(contrib_val):
                 raise ValueError(f"Non-finite SHAP contribution generated for feature '{name}'.")
 
-            direction = "POSITIVE" if contrib >= 0 else "NEGATIVE"
+            direction = "POSITIVE" if contrib_val >= 0 else "NEGATIVE"
             
             exp = PredictionExplanation(
                 prediction=prediction,
                 feature_name=name,
-                contribution=float(contrib),
+                contribution=contrib_val,
                 direction=direction
             )
             explanations.append(exp)
