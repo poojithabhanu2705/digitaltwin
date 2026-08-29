@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import Mock
 from django.utils import timezone
 from core.models import SimulationRun, Intervention, SimulationOutcome, Recommendation
-from core.services.recommendation_service import RecommendationService, ValidationError, NotFoundError
+from decision.recommendation_service import RecommendationService, ValidationError, NotFoundError
 
 @pytest.fixture
 def mock_repo():

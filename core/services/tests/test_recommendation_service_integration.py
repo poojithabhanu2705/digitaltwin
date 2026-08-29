@@ -3,7 +3,7 @@
 import pytest
 from django.utils import timezone
 from core.models import Plant, ProductionLine, Station, SimulationRun, Intervention, SimulationOutcome, Recommendation
-from core.services.recommendation_service import RecommendationService
+from decision.recommendation_service import RecommendationService
 
 # Minimal Inline Repository to satisfy constraint of not creating new repos in production code,
 # while allowing integration tests to access DB.
