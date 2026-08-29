@@ -18,7 +18,7 @@ from core.services.exceptions import (
     ValidationError,
 )
 
-from core.services.feature.feature_service import (
+from core.services.features.feature_service import (
     FeatureService,
 )
 

@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import Mock
 from django.utils import timezone
 from core.models import SimulationRun, Intervention, SimulationOutcome, Recommendation
-from decision.recommendation_service import RecommendationService, ValidationError, NotFoundError
+from core.services.decision.recommendation_service import RecommendationService, ValidationError, NotFoundError
 
 @pytest.fixture
 def mock_repo():
@@ -18,16 +18,17 @@ def service(mock_repo):
     return RecommendationService(decision_repository=mock_repo)
 
 def create_mock_sim_run(sim_id):
-    sim = Mock(spec=SimulationRun)
-    sim.simulation_id = sim_id
-    return sim
+    return SimulationRun(
+        simulation_id=sim_id
+    )
+
 
 def create_mock_intervention(int_id, cost, disruption):
-    interv = Mock(spec=Intervention)
-    interv.intervention_id = int_id
-    interv.cost = cost
-    interv.disruption_level = disruption
-    return interv
+    return Intervention(
+        intervention_id=int_id,
+        cost=cost,
+        disruption_level=disruption
+    )
 
 def create_mock_outcome(t_delta, r_delta):
     out = Mock(spec=SimulationOutcome)

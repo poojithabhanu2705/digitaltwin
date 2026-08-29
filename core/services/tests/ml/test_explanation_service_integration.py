@@ -49,7 +49,8 @@ def test_explanation_service_database_integration(real_trained_model, sample_pre
     assert len(saved_explanations) == 8
     
     # Assert ranking consistency
-    assert abs(saved_explanations[0].contribution) >= abs(saved_explanations[-1].contribution)
+    magnitudes = [abs(e.contribution) for e in explanations]
+    assert magnitudes == sorted(magnitudes, reverse=True)
     
     # Ensure foreign keys are linked properly
     assert saved_explanations[0].prediction.prediction_id == sample_prediction.prediction_id
