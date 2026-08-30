@@ -137,7 +137,13 @@ export default function StationDetail() {
   }
 
   const { station, state, features, telemetry, vehicles = [] } = twin;
-  const isHealthy = state?.health_state?.toUpperCase() === "NOMINAL";
+  const hasLiveState = !!state;
+  const isHealthy = hasLiveState && state.health_state?.toUpperCase() === "NOMINAL";
+
+  // Nominal -> Green, Degraded/Anomaly -> Red, Offline/Missing -> Neutral Gray
+  const statusColor = hasLiveState
+    ? (isHealthy ? "#95c096" : "#d0786a")
+    : "#d8d3c8";
 
   return (
     <div className="overview">
@@ -234,11 +240,30 @@ export default function StationDetail() {
         <div className="overview-live">
           <span
             className="live-dot"
-            style={{ background: isHealthy ? "#95c096" : "#d0786a" }}
+            style={{ background: statusColor }}
           />
-          {state?.health_state || "UNKNOWN"}
+          {hasLiveState ? state.health_state : "OFFLINE"}
         </div>
       </div>
+
+      {/* Offline Alert Banner */}
+      {(!hasLiveState || !telemetry) && (
+        <div style={{
+          padding: "12px 18px",
+          background: "rgba(224, 187, 126, 0.12)",
+          border: "1px solid rgba(224, 187, 126, 0.4)",
+          color: "#946f2c",
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: "11px",
+          marginBottom: "24px",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px"
+        }}>
+          <ShieldAlert size={14} />
+          <span>REAL-TIME SNAPSHOT OFFLINE / LIVE DATA TEMPORARILY UNAVAILABLE FOR THIS STATION</span>
+        </div>
+      )}
 
       {/* Main Attributes Grid */}
       <div className="operations-grid" style={{ marginBottom: "24px" }}>
@@ -347,10 +372,12 @@ export default function StationDetail() {
                 style={{
                   fontSize: "16px",
                   fontWeight: "700",
-                  color: isHealthy ? "#4a7a4c" : "#b04a43",
+                  color: hasLiveState
+                    ? (isHealthy ? "#4a7a4c" : "#b04a43")
+                    : "var(--brown)",
                 }}
               >
-                {state?.health_state || "NOMINAL"}
+                {hasLiveState ? state.health_state : "NO LIVE STATE"}
               </div>
             </div>
 
