@@ -1112,4 +1112,8 @@ Recommendation generation
 React-based operational interface
 Built With
 
+<<<<<<< HEAD
 Django · Django REST Framework · PostgreSQL · Python · React · TypeScript · Vite · Recharts · Axios · Tailwind CSS# digitaltwin
+=======
+Django · Django REST Framework · PostgreSQL · Python · React · TypeScript · Vite · Recharts · Axios · Tailwind CSS
+>>>>>>> ebeb11a (updated readme)
