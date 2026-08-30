@@ -16,6 +16,8 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+SECRET_KEY = os.getenv("SECRET_KEY")
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 import sys
@@ -26,11 +28,13 @@ for p in [BASE_DIR, BASE_DIR / "core", BASE_DIR / "core" / "services", BASE_DIR 
 
 load_dotenv(BASE_DIR / ".env")
 
+DEBUG = True
 
 
-
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+]
 
 
 # Application definition

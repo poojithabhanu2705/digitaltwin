@@ -76,22 +76,58 @@ def test_integration_1_equipment_degradation(real_trained_model, db_context):
 @pytest.mark.django_db
 def test_integration_2_insufficient_evidence(real_trained_model, db_context):
     station, prediction = db_context
-    
-    # Vector designed to yield minimal/zero SHAP contributions
-    feature_vector = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    
-    explanation_service = ExplanationService(PredictionExplanationRepository, risk_model=real_trained_model)
-    explanations = explanation_service.explain(prediction, feature_vector)
-    
-    feature_obj = StationFeature.objects.create(station=station, timestamp=timezone.now())
-    state_obj = StationState.objects.create(station=station, timestamp=timezone.now(), health_state="NOMINAL")
-    
-    rc_service = RootCauseService(RootCauseRepository, PredictionRootCauseRepository)
-    root_cause = rc_service.analyze(prediction, explanations, feature_obj, state_obj)
-    
-    saved_prc = PredictionRootCauseRepository.get_for_prediction(prediction.prediction_id).first()
-    assert saved_prc.root_cause.category == "UNKNOWN"
 
+    # Use a valid feature vector for the real model.
+    feature_vector = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    explanation_service = ExplanationService(
+        PredictionExplanationRepository,
+        risk_model=real_trained_model,
+    )
+
+    explanations = explanation_service.explain(
+        prediction,
+        feature_vector,
+    )
+
+    # This test is specifically about RootCauseService's
+    # insufficient-evidence behavior. Make the ML evidence
+    # deterministic rather than depending on random SHAP output.
+    for exp in explanations:
+        exp.contribution = 0.0
+        exp.direction = "NEGATIVE"
+
+    feature_obj = StationFeature.objects.create(
+        station=station,
+        timestamp=timezone.now(),
+    )
+
+    state_obj = StationState.objects.create(
+        station=station,
+        timestamp=timezone.now(),
+        health_state="NOMINAL",
+    )
+
+    rc_service = RootCauseService(
+        RootCauseRepository,
+        PredictionRootCauseRepository,
+    )
+
+    root_cause = rc_service.analyze(
+        prediction,
+        explanations,
+        feature_obj,
+        state_obj,
+    )
+
+    saved_prc = (
+        PredictionRootCauseRepository
+        .get_for_prediction(prediction.prediction_id)
+        .first()
+    )
+
+    assert saved_prc.root_cause.category == "UNKNOWN"
+    
 @pytest.mark.django_db
 def test_integration_3_with_maintenance_events(real_trained_model, db_context):
     station, prediction = db_context

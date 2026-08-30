@@ -1,83 +1,91 @@
-import { useEffect, useState } from "react";
-import { getPlants, type Plant } from "./api/plant";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-function App() {
-  const [plants, setPlants] = useState<Plant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+import AppShell from "./components/layout/AppShell";
+import OverviewPage from "./pages/OverviewPage";
+import Plants from "./pages/Plants";
+import Lines from "./pages/Lines";
 
-  useEffect(() => {
-    async function loadPlants() {
-      try {
-        const data = await getPlants();
-        setPlants(data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load plants from Django API.");
-      } finally {
-        setLoading(false);
-      }
-    }
+import "./App.css";
 
-    loadPlants();
-  }, []);
-
+function Placeholder({
+  number,
+  title,
+}: {
+  number: string;
+  title: string;
+}) {
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">
-          TwinSight
-        </h1>
-
-        <p className="text-slate-400 mb-8">
-          Digital Twin Dashboard
-        </p>
-
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-xl font-semibold mb-4">
-            Plants
-          </h2>
-
-          {loading && (
-            <p className="text-slate-400">
-              Loading plants...
-            </p>
-          )}
-
-          {error && (
-            <p className="text-red-400">
-              {error}
-            </p>
-          )}
-
-          {!loading && !error && plants.length === 0 && (
-            <p className="text-slate-400">
-              No plants found.
-            </p>
-          )}
-
-          {!loading && !error && plants.length > 0 && (
-            <div className="space-y-3">
-              {plants.map((plant) => (
-                <div
-                  key={plant.plant_id}
-                  className="rounded-lg border border-slate-800 bg-slate-950 p-4"
-                >
-                  <div className="font-medium">
-                    {plant.name}
-                  </div>
-
-                  <div className="text-sm text-slate-400">
-                    {plant.plant_id}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="placeholder-page">
+      <div className="eyebrow">
+        <span>{number}</span>
+        <span>/</span>
+        <span>TWINSIGHT OPERATIONS</span>
       </div>
+
+      <h1>{title}</h1>
+
+      <p>
+        This operational view is being prepared for the TwinSight plant
+        network.
+      </p>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppShell>
+        <Routes>
+          <Route path="/" element={<OverviewPage />} />
+
+          <Route path="/plants" element={<Plants />} />
+
+          <Route path="/lines" element={<Lines />} />
+
+          <Route
+            path="/stations"
+            element={
+              <Placeholder
+                number="04"
+                title="Production stations."
+              />
+            }
+          />
+
+          <Route
+            path="/risks"
+            element={
+              <Placeholder
+                number="05"
+                title="Operational risks."
+              />
+            }
+          />
+
+          <Route
+            path="/simulation"
+            element={
+              <Placeholder
+                number="06"
+                title="Simulation."
+              />
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <Placeholder
+                number="07"
+                title="System settings."
+              />
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AppShell>
+    </BrowserRouter>
+  );
+}

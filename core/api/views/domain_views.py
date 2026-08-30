@@ -9,7 +9,10 @@ from core.services.master.production_structure_service import (
 from core.services.telemetry.telemetry_service import TelemetryService
 from core.services.features.feature_service import FeatureService
 from core.services.state.state_service import StateService
-
+from core.api.serializers import (
+    PlantSerializer,
+    ProductionLineSerializer,
+)
 from core.services.exceptions import (
     NotFoundError,
     ValidationError,
@@ -70,10 +73,15 @@ class PlantListView(APIView):
 
     def get(self, request):
         try:
-            data = PlantService().get_all_plants()
+            plants = PlantService().get_all_plants()
+
+            serializer = PlantSerializer(
+                plants,
+                many=True,
+            )
 
             return Response(
-                data,
+                serializer.data,
                 status=status.HTTP_200_OK,
             )
 
@@ -90,10 +98,12 @@ class PlantDetailView(APIView):
 
     def get(self, request, plant_id):
         try:
-            data = PlantService().get_plant(plant_id)
+            plant = PlantService().get_plant(plant_id)
+
+            serializer = PlantSerializer(plant)
 
             return Response(
-                data,
+                serializer.data,
                 status=status.HTTP_200_OK,
             )
 
@@ -114,16 +124,20 @@ class LineListView(APIView):
 
     def get(self, request):
         try:
-            data = ProductionStructureService().get_all_lines()
+            lines = ProductionStructureService().get_all_lines()
+
+            serializer = ProductionLineSerializer(
+                lines,
+                many=True,
+            )
 
             return Response(
-                data,
+                serializer.data,
                 status=status.HTTP_200_OK,
             )
 
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
-
 
 class LineDetailView(APIView):
     """
@@ -134,16 +148,17 @@ class LineDetailView(APIView):
 
     def get(self, request, line_id):
         try:
-            data = ProductionStructureService().get_line(line_id)
+            line = ProductionStructureService().get_line(line_id)
+
+            serializer = ProductionLineSerializer(line)
 
             return Response(
-                data,
+                serializer.data,
                 status=status.HTTP_200_OK,
             )
 
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
-
 
 class StationListView(APIView):
     """
