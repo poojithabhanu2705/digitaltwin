@@ -4,7 +4,6 @@ import {
   Gauge,
   GitBranch,
   Layers3,
-  Settings,
   TriangleAlert,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -46,11 +45,6 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <NavLink to="/settings" className="nav-item">
-          <Settings size={17} strokeWidth={1.8} />
-          <span>Settings</span>
-        </NavLink>
-
         <div className="system-status">
           <span className="status-dot" />
           <span>SYSTEM ONLINE</span>

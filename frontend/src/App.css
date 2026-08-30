@@ -2872,3 +2872,468 @@
     transform: rotate(360deg);
   }
 }
+
+/* ============================================================
+   Custom Simulation Page Formatting
+   ============================================================ */
+
+.sim-status-banner {
+  padding: 16px 24px;
+  background: rgba(73, 49, 43, 0.05);
+  border-bottom: 1px solid rgba(73, 49, 43, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sim-status-title {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #4a7a4c;
+}
+
+.sim-status-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 4px;
+  color: var(--brown-deep);
+}
+
+.sim-grid-layout {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sim-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .sim-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sim-card {
+  background: rgba(73, 49, 43, 0.02);
+  border: 1px solid rgba(73, 49, 43, 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+}
+
+.sim-card-heading {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.sim-card-comparison {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.sim-card-val-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.sim-card-val-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  opacity: 0.55;
+  margin-bottom: 2px;
+}
+
+.sim-card-val {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--brown-deep);
+}
+
+.sim-card-arrow {
+  font-size: 16px;
+  opacity: 0.4;
+  align-self: center;
+}
+
+.sim-card-change {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-change-good {
+  color: #4a7a4c;
+}
+
+.sim-change-neutral {
+  color: var(--brown);
+  opacity: 0.7;
+}
+
+.sim-change-bad {
+  color: #b04a43;
+}
+
+.sim-rec-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-rec-title {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(73, 49, 43, 0.1);
+}
+
+.sim-rec-box {
+  background: var(--cream);
+  border: 1px solid rgba(73, 49, 43, 0.12);
+  border-left: 3px solid var(--yellow);
+  padding: 20px;
+}
+
+.sim-rec-box-best {
+  background: rgba(231, 201, 92, 0.04);
+}
+
+.sim-rec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.sim-rec-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brown-deep);
+}
+
+.sim-rec-badge {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8px;
+  font-weight: 600;
+  background: var(--yellow);
+  color: var(--brown-deep);
+  padding: 3px 8px;
+  letter-spacing: 0.05em;
+}
+
+.sim-rec-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+  border-top: 1px solid rgba(73, 49, 43, 0.06);
+  border-bottom: 1px solid rgba(73, 49, 43, 0.06);
+  padding: 12px 0;
+}
+
+@media (max-width: 768px) {
+  .sim-rec-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sim-rec-meta-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.sim-rec-meta-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 7px;
+  letter-spacing: 0.05em;
+  opacity: 0.55;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.sim-rec-meta-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brown-deep);
+}
+
+.sim-rec-meta-val-highlight {
+  color: #4a7a4c;
+}
+
+.sim-rec-rationale {
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.sim-rec-alt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid rgba(73, 49, 43, 0.08);
+  background: rgba(73, 49, 43, 0.01);
+  font-size: 11px;
+}
+
+.sim-rec-alt-name {
+  font-weight: 600;
+  color: var(--brown-deep);
+}
+
+.sim-rec-alt-meta {
+  display: flex;
+  gap: 16px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+/* Horizontal Affected Stations Sizing */
+.sim-station-table-wrapper {
+  overflow-x: auto;
+}
+
+.sim-station-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(73, 49, 43, 0.08);
+  min-width: 320px;
+}
+
+.sim-station-row:last-child {
+  border-bottom: 0;
+}
+
+.sim-station-name-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sim-station-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brown-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sim-station-badge-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sim-station-id {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8px;
+  opacity: 0.5;
+}
+
+.sim-station-bottleneck {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 7px;
+  font-weight: 700;
+  background: #b04a43;
+  color: var(--cream);
+  padding: 1px 4px;
+  letter-spacing: 0.05em;
+}
+
+.sim-station-metric-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.sim-station-metric-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brown-deep);
+}
+
+.sim-station-metric-delta {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   Custom Simulation Scenario Input Custom Styling
+   ============================================================ */
+
+.sim-input-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 16px 24px;
+}
+
+.sim-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-input-group-large {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sim-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-slider-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 2px 0 2px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  opacity: 0.55;
+  margin-top: 4px;
+}
+
+/* Custom flow-footer specifically for Simulation pages scenario inputs */
+.sim-flow-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px 24px;
+  border-top: 1px solid rgba(73, 49, 43, 0.12);
+  margin-top: auto;
+}
+
+/* Button Styles for Simulation Panel Actions */
+.sim-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  height: 38px;
+  min-width: 105px;
+  outline: none;
+  border: none;
+  background: transparent;
+}
+
+.sim-btn-primary {
+  background-color: var(--brown);
+  color: var(--cream);
+  border: 1px solid var(--brown);
+  padding: 0 20px;
+}
+
+.sim-btn-primary:hover:not(:disabled) {
+  background-color: var(--brown-deep);
+  border-color: var(--brown-deep);
+  color: #fff;
+  transform: translateY(-0.5px);
+}
+
+.sim-btn-primary:active:not(:disabled) {
+  transform: translateY(0.5px);
+  background-color: #271a17;
+  border-color: #271a17;
+}
+
+.sim-btn-primary:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 1px;
+}
+
+.sim-btn-primary:disabled {
+  background-color: rgba(73, 49, 43, 0.15);
+  border-color: rgba(73, 49, 43, 0.12);
+  color: rgba(73, 49, 43, 0.4);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sim-btn-secondary {
+  background-color: transparent;
+  color: var(--brown);
+  border: 1px solid rgba(73, 49, 43, 0.35);
+  padding: 0 16px;
+}
+
+.sim-btn-secondary:hover:not(:disabled) {
+  background-color: rgba(73, 49, 43, 0.05);
+  border-color: var(--brown);
+  color: var(--brown-deep);
+}
+
+.sim-btn-secondary:active:not(:disabled) {
+  background-color: rgba(73, 49, 43, 0.1);
+  transform: translateY(0.5px);
+}
+
+.sim-btn-secondary:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 1px;
+}
+
+.sim-btn-secondary:disabled {
+  border-color: rgba(73, 49, 43, 0.15);
+  color: rgba(73, 49, 43, 0.3);
+  cursor: not-allowed;
+}
+
+.sim-btn-spin {
+  animation: sim-spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes sim-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

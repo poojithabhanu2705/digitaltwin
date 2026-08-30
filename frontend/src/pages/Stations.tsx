@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Activity,
   ArrowUpRight,
@@ -45,6 +46,10 @@ function normalizedStatus(
 }
 
 export default function Stations() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const lineIdFilter = searchParams.get("line_id") || "";
+
   const [stations, setStations] =
     useState<Station[]>([]);
 
@@ -88,19 +93,24 @@ export default function Stations() {
     void load();
   }, []);
 
-  const online = stations.filter(
+  const filteredStations = useMemo(() => {
+    if (!lineIdFilter) return stations;
+    return stations.filter((station) => station.line_id === lineIdFilter);
+  }, [stations, lineIdFilter]);
+
+  const online = filteredStations.filter(
     (station) =>
       normalizedStatus(station) ===
       "ONLINE",
   ).length;
 
-  const attention = stations.filter(
+  const attention = filteredStations.filter(
     (station) =>
       normalizedStatus(station) ===
       "ATTENTION",
   ).length;
 
-  const offline = stations.filter(
+  const offline = filteredStations.filter(
     (station) =>
       normalizedStatus(station) ===
       "OFFLINE",
@@ -133,7 +143,7 @@ export default function Stations() {
             <strong>
               {loading
                 ? "—"
-                : stations.length}
+                : filteredStations.length}
             </strong>
           </div>
 
@@ -167,6 +177,27 @@ export default function Stations() {
         </div>
       </header>
 
+      {lineIdFilter && (
+        <div style={{ marginBottom: "22px", fontSize: "12px", display: "flex", gap: "10px", alignItems: "center", paddingInline: "4px" }}>
+          <span style={{ color: "var(--brown)", opacity: 0.8 }}>Filtering stations for Production Line: <strong>{lineIdFilter}</strong></span>
+          <button
+            onClick={() => setSearchParams({})}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(73, 49, 43, 0.4)",
+              padding: "4px 8px",
+              cursor: "pointer",
+              fontSize: "10px",
+              fontWeight: "600",
+              color: "var(--brown)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            CLEAR FILTER
+          </button>
+        </div>
+      )}
+
       <div className="stations-toolbar">
         <div className="stations-section-label">
           <Boxes
@@ -179,7 +210,7 @@ export default function Stations() {
 
         {!loading && !error && (
           <span>
-            {stations.length} BACKEND RECORDS
+            {filteredStations.length} BACKEND RECORDS
           </span>
         )}
       </div>
@@ -200,7 +231,7 @@ export default function Stations() {
 
       {!loading &&
         error &&
-        stations.length === 0 && (
+        filteredStations.length === 0 && (
           <div className="lines-state lines-state-error">
             <strong>{error}</strong>
 
@@ -219,7 +250,15 @@ export default function Stations() {
         )}
 
       {!loading &&
-        stations.length > 0 && (
+        filteredStations.length === 0 && !error && (
+          <div className="lines-state">
+            <strong>No stations match the selected filter.</strong>
+            <span>Please clear the filter or check configuration.</span>
+          </div>
+        )}
+
+      {!loading &&
+        filteredStations.length > 0 && (
           <section className="stations-table">
             <div className="stations-table-head">
               <span>STATION</span>
@@ -231,7 +270,7 @@ export default function Stations() {
               <span />
             </div>
 
-            {stations.map((station) => {
+            {filteredStations.map((station) => {
               const state =
                 normalizedStatus(station);
 
@@ -297,6 +336,7 @@ export default function Stations() {
                     className="station-open"
                     aria-label={`Open ${station.name}`}
                     type="button"
+                    onClick={() => navigate(`/stations/${station.station_id}`)}
                   >
                     <ArrowUpRight
                       size={16}

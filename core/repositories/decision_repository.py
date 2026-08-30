@@ -65,7 +65,10 @@ class DecisionRepository:
         )
 
     @staticmethod
-    def save_recommendation(**data):
+    def save_recommendation(recommendation=None, **data):
+        if isinstance(recommendation, Recommendation):
+            recommendation.save()
+            return recommendation
         return Recommendation.objects.create(**data)
 
     @staticmethod

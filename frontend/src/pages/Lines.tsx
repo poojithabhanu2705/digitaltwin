@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Factory,
@@ -13,6 +14,10 @@ import {
 } from "../api/lines";
 
 export default function Lines() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const plantIdFilter = searchParams.get("plant_id") || "";
+
   const [lines, setLines] = useState<
     ProductionLine[]
   >([]);
@@ -54,7 +59,12 @@ export default function Lines() {
     void loadLines();
   }, []);
 
-  const activeCount = lines.filter(
+  const filteredLines = useMemo(() => {
+    if (!plantIdFilter) return lines;
+    return lines.filter((line) => line.plant_id === plantIdFilter);
+  }, [lines, plantIdFilter]);
+
+  const activeCount = filteredLines.filter(
     (line) =>
       line.status.toUpperCase() === "ACTIVE",
   ).length;
@@ -79,7 +89,7 @@ export default function Lines() {
           <span>CONFIGURED LINES</span>
 
           <strong>
-            {String(lines.length).padStart(
+            {String(filteredLines.length).padStart(
               2,
               "0",
             )}
@@ -91,14 +101,35 @@ export default function Lines() {
         </div>
       </header>
 
+      {plantIdFilter && (
+        <div style={{ marginBottom: "22px", fontSize: "12px", display: "flex", gap: "10px", alignItems: "center" }}>
+          <span style={{ color: "var(--brown)", opacity: 0.8 }}>Filtering lines for Plant: <strong>{plantIdFilter}</strong></span>
+          <button
+            onClick={() => setSearchParams({})}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(73, 49, 43, 0.4)",
+              padding: "4px 8px",
+              cursor: "pointer",
+              fontSize: "10px",
+              fontWeight: "600",
+              color: "var(--brown)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            CLEAR FILTER
+          </button>
+        </div>
+      )}
+
       <div className="lines-section-label">
         <span>LINE NETWORK</span>
 
         {!loading &&
           !error &&
-          lines.length > 0 && (
+          filteredLines.length > 0 && (
             <span>
-              {activeCount} / {lines.length} ACTIVE
+              {activeCount} / {filteredLines.length} ACTIVE
             </span>
           )}
       </div>
@@ -161,9 +192,9 @@ export default function Lines() {
         )}
 
       {!loading &&
-        lines.length > 0 && (
+        filteredLines.length > 0 && (
           <section className="lines-grid">
-            {lines.map((line, index) => {
+            {filteredLines.map((line, index) => {
               const isActive =
                 line.status.toUpperCase() ===
                 "ACTIVE";
@@ -261,6 +292,7 @@ export default function Lines() {
                       type="button"
                       className="line-open"
                       aria-label={`Open ${line.name}`}
+                      onClick={() => navigate(`/stations?line_id=${line.line_id}`)}
                     >
                       <ArrowRight
                         size={16}

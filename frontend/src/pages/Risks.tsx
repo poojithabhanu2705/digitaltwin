@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Activity,
@@ -21,6 +22,7 @@ function formatStatus(status?: string | null) {
 }
 
 export default function RisksPage() {
+  const navigate = useNavigate();
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -347,7 +349,18 @@ export default function RisksPage() {
                       </span>
                     </div>
 
-                    <div
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (operational) {
+                          navigate(`/stations/${station.station_id}`);
+                        } else {
+                          const params = new URLSearchParams();
+                          if (station.line_id) params.set("line_id", station.line_id);
+                          params.set("station_id", station.station_id);
+                          navigate(`/simulation?${params.toString()}`);
+                        }
+                      }}
                       style={{
                         marginLeft: "auto",
                         display: "flex",
@@ -355,6 +368,12 @@ export default function RisksPage() {
                         gap: "6px",
                         fontSize: "11px",
                         letterSpacing: "0.08em",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        font: "inherit",
+                        padding: "4px 8px",
+                        opacity: 0.85,
                       }}
                     >
                       {operational ? (
@@ -365,10 +384,10 @@ export default function RisksPage() {
                       ) : (
                         <>
                           <AlertTriangle size={13} />
-                          REVIEW
+                          SIMULATE
                         </>
                       )}
-                    </div>
+                    </button>
                   </div>
                 );
               })

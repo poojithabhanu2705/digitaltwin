@@ -3,7 +3,45 @@ from rest_framework import serializers
 from core.models import (
     SimulationRun,
     SimulationOutcome,
+    Recommendation,
 )
+
+
+class RecommendationSerializer(
+    serializers.ModelSerializer
+):
+    intervention_id = serializers.IntegerField(
+        source="intervention.intervention_id",
+        read_only=True,
+    )
+
+    intervention_name = serializers.CharField(
+        source="intervention.name",
+        read_only=True,
+    )
+
+    intervention_description = serializers.CharField(
+        source="intervention.description",
+        read_only=True,
+    )
+
+    class Meta:
+        model = Recommendation
+
+        fields = [
+            "recommendation_id",
+            "timestamp",
+            "decision_score",
+            "expected_throughput_gain",
+            "expected_risk_reduction",
+            "cost",
+            "confidence",
+            "status",
+            "rationale",
+            "intervention_id",
+            "intervention_name",
+            "intervention_description",
+        ]
 
 
 class SimulationOutcomeSerializer(
@@ -62,6 +100,7 @@ class SimulationRunSerializer(
     )
 
     outcomes = serializers.SerializerMethodField()
+    recommendations = serializers.SerializerMethodField()
 
     class Meta:
         model = SimulationRun
@@ -81,6 +120,7 @@ class SimulationRunSerializer(
             "number_of_runs",
             "status",
             "outcomes",
+            "recommendations",
         ]
 
     def get_outcomes(self, obj):
@@ -88,5 +128,13 @@ class SimulationRunSerializer(
 
         return SimulationOutcomeSerializer(
             outcomes,
+            many=True,
+        ).data
+
+    def get_recommendations(self, obj):
+        recs = obj.recommendations.all()
+
+        return RecommendationSerializer(
+            recs,
             many=True,
         ).data

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Activity,
   ArrowRight,
@@ -14,6 +15,7 @@ import { getStations } from "../api/stations";
 import type { Plant } from "../types/api";
 
 export default function Plants() {
+  const navigate = useNavigate();
   const [plants, setPlants] =
     useState<Plant[]>([]);
 
@@ -293,6 +295,7 @@ export default function Plants() {
                         className="plant-open"
                         aria-label={`Open ${plant.name}`}
                         type="button"
+                        onClick={() => navigate(`/lines?plant_id=${plant.plant_id}`)}
                       >
                         <ArrowRight
                           size={16}

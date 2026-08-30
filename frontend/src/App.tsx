@@ -11,38 +11,11 @@ import OverviewPage from "./pages/OverviewPage";
 import Plants from "./pages/Plants";
 import Lines from "./pages/Lines";
 import Stations from "./pages/Stations";
+import StationDetail from "./pages/StationDetail";
 import Risks from "./pages/Risks";
 import Simulation from "./pages/Simulation";
 
 import "./App.css";
-
-
-function Placeholder({
-  number,
-  title,
-}: {
-  number: string;
-  title: string;
-}) {
-  return (
-    <div className="placeholder-page">
-
-      <div className="eyebrow">
-        <span>{number}</span>
-        <span>/</span>
-        <span>TWINSIGHT OPERATIONS</span>
-      </div>
-
-      <h1>{title}</h1>
-
-      <p>
-        This operational view is being prepared for
-        the TwinSight plant network.
-      </p>
-
-    </div>
-  );
-}
 
 
 export default function App() {
@@ -74,6 +47,11 @@ export default function App() {
           />
 
           <Route
+            path="/stations/:stationId"
+            element={<StationDetail />}
+          />
+
+          <Route
             path="/risks"
             element={<Risks />}
           />
@@ -86,9 +64,9 @@ export default function App() {
           <Route
             path="/settings"
             element={
-              <Placeholder
-                number="07"
-                title="System settings."
+              <Navigate
+                to="/"
+                replace
               />
             }
           />
