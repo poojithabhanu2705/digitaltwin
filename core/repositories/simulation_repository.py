@@ -215,3 +215,10 @@ class SimulationRepository:
             .select_related("station")
             .order_by("station__position")
         )
+        
+    @staticmethod
+    def update_status(simulation_id, status):
+        simulation = SimulationRun.objects.get(pk=simulation_id)
+        simulation.status = status
+        simulation.save(update_fields=["status"])
+        return simulation

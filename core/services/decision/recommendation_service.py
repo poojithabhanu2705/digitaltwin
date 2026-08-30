@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from django.utils import timezone
 
 from core.models import Recommendation, SimulationRun, Intervention, SimulationOutcome
+from core.repositories import decision_repository, simulation_repository
 
 # Assuming shared exceptions exist as per architecture
 class ValidationError(Exception):
@@ -21,9 +22,9 @@ class RecommendationService:
     to generate an optimal, deterministic recommendation.
     """
 
-    def __init__(self, decision_repository):
-        # We use an injected repository to strictly adhere to the service/repo boundary
+    def __init__(self, decision_repository, simulation_repository=None):
         self.repo = decision_repository
+        self.simulation_repo = simulation_repository or decision_repository
 
     def evaluate_and_recommend(self, candidates: List[Dict[str, Any]]) -> Recommendation:
         """
@@ -49,7 +50,11 @@ class RecommendationService:
                 raise ValidationError("All candidates must contain 'simulation_run_id' and 'intervention_id'.")
 
             # Fetch immutable upstream references
-            sim_run = self.repo.get_simulation_run(sim_id)
+            sim_run = (
+                self.simulation_repo.get_simulation_run(sim_id)
+                if hasattr(self.simulation_repo, "get_simulation_run")
+                else self.simulation_repo.get_by_id(sim_id)
+            )
             intervention = self.repo.get_intervention(int_id)
             
             if not sim_run:
@@ -57,7 +62,11 @@ class RecommendationService:
             if not intervention:
                 raise NotFoundError(f"Intervention with ID {int_id} not found.")
 
-            outcomes = self.repo.get_simulation_outcomes(sim_id)
+            outcomes = (
+                self.simulation_repo.get_simulation_outcomes(sim_id)
+                if hasattr(self.simulation_repo, "get_simulation_outcomes")
+                else self.simulation_repo.get_outcomes_for_run(sim_id)
+            )
             if not outcomes:
                 logger.warning(f"SimulationRun {sim_id} has no outcomes. Proceeding with zero gains.")
             
