@@ -1,4 +1,4 @@
-import apiClient from "./client";
+import { cachedGet, clearCache } from "./client";
 
 export interface ProductionLine {
   line_id: string;
@@ -10,17 +10,29 @@ export interface ProductionLine {
   status: string;
 }
 
-export async function getLines(): Promise<ProductionLine[]> {
-  const response = await apiClient.get<ProductionLine[]>("/lines/");
-  return response.data;
+const LINES_CACHE_KEY = "lines";
+
+export async function getLines(
+  forceRefresh = false,
+): Promise<ProductionLine[]> {
+  return cachedGet<ProductionLine[]>(
+    LINES_CACHE_KEY,
+    "/lines/",
+    forceRefresh,
+  );
 }
 
 export async function getLine(
   lineId: string,
+  forceRefresh = false,
 ): Promise<ProductionLine> {
-  const response = await apiClient.get<ProductionLine>(
+  return cachedGet<ProductionLine>(
+    `line:${lineId}`,
     `/lines/${lineId}/`,
+    forceRefresh,
   );
+}
 
-  return response.data;
+export function clearLinesCache(): void {
+  clearCache(LINES_CACHE_KEY);
 }

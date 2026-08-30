@@ -1,11 +1,21 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 
 import AppShell from "./components/layout/AppShell";
+
 import OverviewPage from "./pages/OverviewPage";
 import Plants from "./pages/Plants";
 import Lines from "./pages/Lines";
+import Stations from "./pages/Stations";
+import Risks from "./pages/Risks";
+import Simulation from "./pages/Simulation";
 
 import "./App.css";
+
 
 function Placeholder({
   number,
@@ -16,6 +26,7 @@ function Placeholder({
 }) {
   return (
     <div className="placeholder-page">
+
       <div className="eyebrow">
         <span>{number}</span>
         <span>/</span>
@@ -25,52 +36,51 @@ function Placeholder({
       <h1>{title}</h1>
 
       <p>
-        This operational view is being prepared for the TwinSight plant
-        network.
+        This operational view is being prepared for
+        the TwinSight plant network.
       </p>
+
     </div>
   );
 }
 
+
 export default function App() {
   return (
     <BrowserRouter>
+
       <AppShell>
+
         <Routes>
-          <Route path="/" element={<OverviewPage />} />
 
-          <Route path="/plants" element={<Plants />} />
+          <Route
+            path="/"
+            element={<OverviewPage />}
+          />
 
-          <Route path="/lines" element={<Lines />} />
+          <Route
+            path="/plants"
+            element={<Plants />}
+          />
+
+          <Route
+            path="/lines"
+            element={<Lines />}
+          />
 
           <Route
             path="/stations"
-            element={
-              <Placeholder
-                number="04"
-                title="Production stations."
-              />
-            }
+            element={<Stations />}
           />
 
           <Route
             path="/risks"
-            element={
-              <Placeholder
-                number="05"
-                title="Operational risks."
-              />
-            }
+            element={<Risks />}
           />
 
           <Route
             path="/simulation"
-            element={
-              <Placeholder
-                number="06"
-                title="Simulation."
-              />
-            }
+            element={<Simulation />}
           />
 
           <Route
@@ -83,9 +93,20 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="*"
+            element={
+              <Navigate
+                to="/"
+                replace
+              />
+            }
+          />
+
         </Routes>
+
       </AppShell>
+
     </BrowserRouter>
   );
 }

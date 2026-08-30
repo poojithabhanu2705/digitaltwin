@@ -1,85 +1,331 @@
+import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   ArrowRight,
+  Activity,
   Factory,
   Gauge,
   GitBranch,
   Layers3,
-  TriangleAlert,
+  RefreshCw,
 } from "lucide-react";
 
+import { getPlants } from "../api/plants";
+import { getLines, type ProductionLine } from "../api/lines";
+import { getStations, type Station } from "../api/stations";
+import type { Plant } from "../types/api";
+
+function isActiveStatus(status?: string | null) {
+  if (!status) return false;
+
+  return [
+    "ACTIVE",
+    "OPERATIONAL",
+    "ONLINE",
+    "RUNNING",
+    "NOMINAL",
+  ].includes(status.toUpperCase());
+}
+
+function formatStatus(status?: string | null) {
+  if (!status) return "UNKNOWN";
+
+  return status
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function OverviewPage() {
+  const [plants, setPlants] = useState<Plant[]>([]);
+  const [lines, setLines] = useState<ProductionLine[]>([]);
+  const [stations, setStations] = useState<Station[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
+  async function loadOverview(forceRefresh = false) {
+    try {
+      if (forceRefresh) {
+        setRefreshing(true);
+      } else if (
+        plants.length === 0 &&
+        lines.length === 0 &&
+        stations.length === 0
+      ) {
+        setLoading(true);
+      }
+
+      setError("");
+
+      const [plantData, lineData, stationData] =
+        await Promise.all([
+          getPlants(forceRefresh),
+          getLines(forceRefresh),
+          getStations(forceRefresh),
+        ]);
+
+      setPlants(plantData);
+      setLines(lineData);
+      setStations(stationData);
+    } catch (err) {
+      console.error("Failed to load overview:", err);
+
+      setError(
+        "Unable to load live plant data. Make sure the Django API is running.",
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadOverview();
+  }, []);
+
+  const activeLines = useMemo(
+    () => lines.filter((line) => isActiveStatus(line.status)),
+    [lines],
+  );
+
+  const operationalStations = useMemo(
+    () =>
+      stations.filter((station) =>
+        isActiveStatus(station.status),
+      ),
+    [stations],
+  );
+
+  const selectedPlant = plants[0];
+
+  const stationCoverage =
+    stations.length > 0
+      ? Math.round(
+          (operationalStations.length / stations.length) * 100,
+        )
+      : 0;
+
+  const plantLines = selectedPlant
+    ? lines.filter(
+        (line) => line.plant_id === selectedPlant.plant_id,
+      )
+    : [];
+
+  const plantStations = selectedPlant
+    ? stations.filter((station) => {
+        const line = lines.find(
+          (item) => item.line_id === station.line_id,
+        );
+
+        return line?.plant_id === selectedPlant.plant_id;
+      })
+    : [];
+
+  const lastStationStatus = stations
+    .slice()
+    .sort((a, b) => {
+      const aSequence =
+        a.sequence_number ?? Number.MAX_SAFE_INTEGER;
+
+      const bSequence =
+        b.sequence_number ?? Number.MAX_SAFE_INTEGER;
+
+      return aSequence - bSequence;
+    })
+    .slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="overview">
+        <div className="overview-heading">
+          <div>
+            <div className="eyebrow">
+              01 / PLANT OVERVIEW
+            </div>
+
+            <h1>Operations at a glance.</h1>
+
+            <p>Loading live production structure...</p>
+          </div>
+
+          <div className="overview-live">
+            <span className="live-dot" />
+            CONNECTING
+          </div>
+        </div>
+
+        <section className="metric-rail">
+          {[
+            "PLANTS",
+            "ACTIVE LINES",
+            "STATIONS",
+            "COVERAGE",
+          ].map((label) => (
+            <div className="metric" key={label}>
+              <span className="metric-label">{label}</span>
+
+              <div className="metric-value">—</div>
+
+              <div className="metric-note">
+                LOADING
+              </div>
+            </div>
+          ))}
+        </section>
+      </div>
+    );
+  }
+
+  if (error && plants.length === 0) {
+    return (
+      <div className="overview">
+        <div className="overview-heading">
+          <div>
+            <div className="eyebrow">
+              01 / PLANT OVERVIEW
+            </div>
+
+            <h1>Operations at a glance.</h1>
+
+            <p>{error}</p>
+          </div>
+
+          <button
+            type="button"
+            className="overview-live"
+            onClick={() => void loadOverview(true)}
+            disabled={refreshing}
+            style={{
+              border: "none",
+              cursor: refreshing
+                ? "default"
+                : "pointer",
+              background: "transparent",
+              opacity: refreshing ? 0.6 : 1,
+            }}
+          >
+            <RefreshCw
+              size={14}
+              className={
+                refreshing ? "spin" : undefined
+              }
+            />
+
+            {refreshing ? "REFRESHING" : "RETRY"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="overview">
-
-      {/* Page heading */}
-
       <div className="overview-heading">
         <div>
-          <div className="eyebrow">01 / PLANT OVERVIEW</div>
+          <div className="eyebrow">
+            01 / PLANT OVERVIEW
+          </div>
 
           <h1>Operations at a glance.</h1>
 
           <p>
-            A live view of production, assets and emerging operational
-            conditions.
+            Live production structure and operational
+            status from the TwinSight backend.
           </p>
         </div>
 
-        <div className="overview-live">
+        <button
+          type="button"
+          className="overview-live"
+          onClick={() => void loadOverview(true)}
+          disabled={refreshing}
+          style={{
+            border: "none",
+            cursor: refreshing
+              ? "default"
+              : "pointer",
+            background: "transparent",
+            opacity: refreshing ? 0.6 : 1,
+          }}
+        >
           <span className="live-dot" />
-          LIVE DATA
-        </div>
+
+          {refreshing ? (
+            <>
+              <RefreshCw
+                size={13}
+                className="spin"
+              />
+              REFRESHING
+            </>
+          ) : (
+            "LIVE DATA"
+          )}
+        </button>
       </div>
 
-      {/* Metrics */}
-
       <section className="metric-rail">
-
         <div className="metric">
-          <span className="metric-label">PRODUCTION</span>
+          <span className="metric-label">
+            PLANTS
+          </span>
 
           <div className="metric-value">
-            84<span className="metric-unit">%</span>
+            {plants.length}
           </div>
 
-          <div className="metric-note">CURRENT THROUGHPUT</div>
+          <div className="metric-note">
+            CONFIGURED FACILITIES
+          </div>
         </div>
 
         <div className="metric">
-          <span className="metric-label">ACTIVE LINES</span>
+          <span className="metric-label">
+            ACTIVE LINES
+          </span>
 
-          <div className="metric-value">12</div>
+          <div className="metric-value">
+            {activeLines.length}
+          </div>
 
-          <div className="metric-note">OF 14 CONFIGURED</div>
+          <div className="metric-note">
+            OF {lines.length} CONFIGURED
+          </div>
         </div>
 
         <div className="metric">
-          <span className="metric-label">STATIONS</span>
+          <span className="metric-label">
+            STATIONS
+          </span>
 
-          <div className="metric-value">47</div>
+          <div className="metric-value">
+            {stations.length}
+          </div>
 
-          <div className="metric-note">41 OPERATIONAL</div>
+          <div className="metric-note">
+            {operationalStations.length} OPERATIONAL
+          </div>
         </div>
 
         <div className="metric">
-          <span className="metric-label">OPEN RISKS</span>
+          <span className="metric-label">
+            COVERAGE
+          </span>
 
-          <div className="metric-value">03</div>
+          <div className="metric-value">
+            {stationCoverage}
+            <span className="metric-unit">%</span>
+          </div>
 
-          <div className="metric-note">1 HIGH PRIORITY</div>
+          <div className="metric-note">
+            OPERATIONAL STATIONS
+          </div>
         </div>
-
       </section>
 
-      {/* Main dashboard */}
-
       <div className="operations-grid">
-
-        {/* Plant flow */}
-
         <section className="flow-panel">
-
           <div className="panel-heading">
             <div>
               <span className="panel-kicker">
@@ -89,19 +335,31 @@ export default function OverviewPage() {
               <h2>Plant flow</h2>
             </div>
 
-            <Factory size={18} strokeWidth={1.5} />
+            <Factory
+              size={18}
+              strokeWidth={1.5}
+            />
           </div>
 
           <div className="flow-map">
-
             <div className="flow-node flow-node-primary">
               <div className="flow-icon">
-                <Factory size={17} strokeWidth={1.5} />
+                <Factory
+                  size={17}
+                  strokeWidth={1.5}
+                />
               </div>
 
               <div>
-                <strong>PLANT 01</strong>
-                <span>MAIN FACILITY</span>
+                <strong>
+                  {selectedPlant?.name ??
+                    "NO PLANT"}
+                </strong>
+
+                <span>
+                  {selectedPlant?.location ??
+                    "NO LOCATION"}
+                </span>
               </div>
             </div>
 
@@ -113,12 +371,27 @@ export default function OverviewPage() {
 
             <div className="flow-node">
               <div className="flow-icon">
-                <GitBranch size={17} strokeWidth={1.5} />
+                <GitBranch
+                  size={17}
+                  strokeWidth={1.5}
+                />
               </div>
 
               <div>
-                <strong>14 LINES</strong>
-                <span>12 ACTIVE</span>
+                <strong>
+                  {plantLines.length} LINES
+                </strong>
+
+                <span>
+                  {
+                    plantLines.filter((line) =>
+                      isActiveStatus(
+                        line.status,
+                      ),
+                    ).length
+                  }{" "}
+                  ACTIVE
+                </span>
               </div>
             </div>
 
@@ -130,213 +403,215 @@ export default function OverviewPage() {
 
             <div className="flow-node">
               <div className="flow-icon">
-                <Layers3 size={17} strokeWidth={1.5} />
+                <Layers3
+                  size={17}
+                  strokeWidth={1.5}
+                />
               </div>
 
               <div>
-                <strong>47 STATIONS</strong>
-                <span>41 ONLINE</span>
+                <strong>
+                  {plantStations.length} STATIONS
+                </strong>
+
+                <span>
+                  {
+                    plantStations.filter(
+                      (station) =>
+                        isActiveStatus(
+                          station.status,
+                        ),
+                    ).length
+                  }{" "}
+                  ONLINE
+                </span>
               </div>
             </div>
-
           </div>
 
           <div className="flow-footer">
             <div>
               <span className="small-status-dot" />
-              NOMINAL OPERATING STATE
+
+              {selectedPlant
+                ? `${formatStatus(
+                    selectedPlant.status,
+                  )} OPERATING STATE`
+                : "NO PLANT DATA"}
             </div>
 
-            <span>LAST SYNC 05:38:21</span>
-          </div>
+            <button
+              type="button"
+              onClick={() =>
+                void loadOverview(true)
+              }
+              disabled={refreshing}
+              style={{
+                border: "none",
+                background: "transparent",
+                cursor: refreshing
+                  ? "default"
+                  : "pointer",
+                font: "inherit",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                opacity: refreshing
+                  ? 0.6
+                  : 1,
+              }}
+            >
+              <RefreshCw
+                size={13}
+                className={
+                  refreshing
+                    ? "spin"
+                    : undefined
+                }
+              />
 
+              {refreshing
+                ? "REFRESHING"
+                : "REFRESH"}
+            </button>
+          </div>
         </section>
 
-        {/* Operating condition */}
-
         <section className="state-panel">
-
           <div className="panel-heading">
             <div>
-              <span className="panel-kicker">SYSTEM STATE</span>
-              <h2>Operating condition</h2>
+              <span className="panel-kicker">
+                SYSTEM STATE
+              </span>
+
+              <h2>
+                Operating condition
+              </h2>
             </div>
 
-            <Gauge size={18} strokeWidth={1.5} />
+            <Gauge
+              size={18}
+              strokeWidth={1.5}
+            />
           </div>
 
           <div className="state-reading">
-
             <div className="state-number">
-              84%
+              {stationCoverage}%
             </div>
 
             <div className="state-copy">
-              <strong>Production efficiency</strong>
-              <span>+3.2% FROM PREVIOUS SHIFT</span>
-            </div>
+              <strong>
+                Station operational coverage
+              </strong>
 
+              <span>
+                {operationalStations.length} OF{" "}
+                {stations.length} STATIONS
+                OPERATIONAL
+              </span>
+            </div>
           </div>
 
           <div className="state-bar">
-            <div className="state-bar-fill" />
+            <div
+              className="state-bar-fill"
+              style={{
+                width: `${stationCoverage}%`,
+              }}
+            />
           </div>
 
           <div className="state-footer">
-            <span>TARGET 80%</span>
-            <span>PEAK 91%</span>
-          </div>
+            <span>
+              {operationalStations.length} ONLINE
+            </span>
 
+            <span>
+              {stations.length -
+                operationalStations.length}{" "}
+              OFFLINE
+            </span>
+          </div>
         </section>
 
-        {/* Recent activity */}
-
         <section className="activity-panel">
-
           <div className="panel-heading">
             <div>
               <span className="panel-kicker">
                 OPERATIONAL FEED
               </span>
 
-              <h2>Recent activity</h2>
+              <h2>Current stations</h2>
             </div>
 
-            <Activity size={18} strokeWidth={1.5} />
+            <Activity
+              size={18}
+              strokeWidth={1.5}
+            />
           </div>
 
           <div className="activity-list">
-
-            <div className="activity-row">
-              <time className="activity-time">05:38</time>
-
-              <div className="activity-marker">
-                <span />
+            {lastStationStatus.length === 0 ? (
+              <div className="activity-row">
+                <div className="activity-content">
+                  <strong>
+                    No station data available
+                  </strong>
+                </div>
               </div>
+            ) : (
+              lastStationStatus.map(
+                (station) => (
+                  <div
+                    className="activity-row"
+                    key={station.station_id}
+                  >
+                    <div className="activity-marker">
+                      <span />
+                    </div>
 
-              <div className="activity-content">
-                <span className="activity-type">LINE</span>
+                    <div className="activity-content">
+                      <span className="activity-type">
+                        {formatStatus(
+                          station.station_type,
+                        )}
+                      </span>
 
-                <strong>
-                  Assembly Line 04 resumed
-                </strong>
+                      <strong>
+                        {station.name}
+                      </strong>
 
-                <span>
-                  Cycle time returned to nominal range
-                </span>
-              </div>
-            </div>
+                      <span>
+                        {formatStatus(
+                          station.status,
+                        )}
 
-            <div className="activity-row">
-              <time className="activity-time">05:31</time>
-
-              <div className="activity-marker">
-                <span />
-              </div>
-
-              <div className="activity-content">
-                <span className="activity-type">STATION</span>
-
-                <strong>
-                  Station ST-218 telemetry received
-                </strong>
-
-                <span>
-                  All monitored signals within expected range
-                </span>
-              </div>
-            </div>
-
-            <div className="activity-row">
-              <time className="activity-time">05:24</time>
-
-              <div className="activity-marker">
-                <span />
-              </div>
-
-              <div className="activity-content">
-                <span className="activity-type">PRODUCTION</span>
-
-                <strong>
-                  Throughput target updated
-                </strong>
-
-                <span>
-                  Shift target increased to 86%
-                </span>
-              </div>
-            </div>
-
+                        {station.line_name
+                          ? ` · ${station.line_name}`
+                          : ""}
+                      </span>
+                    </div>
+                  </div>
+                ),
+              )
+            )}
           </div>
-
         </section>
-
-        {/* Risk board */}
-
-        <section className="risk-panel">
-
-          <div className="panel-heading">
-            <div>
-              <span className="panel-kicker">
-                ATTENTION REQUIRED
-              </span>
-
-              <h2>Risk board</h2>
-            </div>
-
-            <TriangleAlert size={18} strokeWidth={1.5} />
-          </div>
-
-          <div className="risk-count">
-            <strong>03</strong>
-            <span>OPEN CONDITIONS</span>
-          </div>
-
-          <div className="risk-item risk-high">
-            <span className="risk-marker" />
-
-            <div>
-              <strong>Material availability</strong>
-              <span>LINE 07 · HIGH</span>
-            </div>
-          </div>
-
-          <div className="risk-item">
-            <span className="risk-marker" />
-
-            <div>
-              <strong>Cycle time variance</strong>
-              <span>STATION ST-218 · MEDIUM</span>
-            </div>
-          </div>
-
-          <div className="risk-item">
-            <span className="risk-marker" />
-
-            <div>
-              <strong>Telemetry interruption</strong>
-              <span>LINE 03 · LOW</span>
-            </div>
-          </div>
-
-          <button className="risk-link">
-            VIEW ALL CONDITIONS
-            <ArrowRight size={13} strokeWidth={1.5} />
-          </button>
-
-        </section>
-
       </div>
 
-      <div className="overview-footer">
-        <div>
-          <span className="small-status-dot" />
-          SYSTEM NOMINAL
+      {error && (
+        <div
+          style={{
+            marginTop: "12px",
+            fontSize: "11px",
+            opacity: 0.65,
+          }}
+        >
+          Latest refresh failed. Showing previously
+          loaded backend data.
         </div>
-
-        <span>TWINSIGHT DIGITAL TWIN</span>
-      </div>
-
+      )}
     </div>
   );
 }

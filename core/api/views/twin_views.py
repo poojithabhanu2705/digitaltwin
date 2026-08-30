@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from core.services.twin.twin_service import TwinService
+from core.api.serializers.twin_serializers import TwinSnapshotSerializer, VehicleTwinSerializer
 from core.services.exceptions import (
     NotFoundError,
     ValidationError,
@@ -15,7 +16,8 @@ class StationTwinView(APIView):
     def get(self, request, station_id):
         try:
             data = TwinService().get_station_twin(station_id)
-            return Response(data, status=status.HTTP_200_OK)
+            serializer = TwinSnapshotSerializer(data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except NotFoundError as exc:
             return Response(
@@ -41,7 +43,8 @@ class VehicleTwinView(APIView):
     def get(self, request, vehicle_id):
         try:
             data = TwinService().get_vehicle_twin(vehicle_id)
-            return Response(data, status=status.HTTP_200_OK)
+            serializer = VehicleTwinSerializer(data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except NotFoundError as exc:
             return Response(
@@ -67,7 +70,8 @@ class StationTwinWithVehiclesView(APIView):
     def get(self, request, station_id):
         try:
             data = TwinService().get_station_twin_with_vehicles(station_id)
-            return Response(data, status=status.HTTP_200_OK)
+            serializer = TwinSnapshotSerializer(data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except NotFoundError as exc:
             return Response(
@@ -86,3 +90,4 @@ class StationTwinWithVehiclesView(APIView):
                 {"detail": str(exc)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+

@@ -1,7 +1,18 @@
-import apiClient from "./client";
+import { cachedGet, clearCache } from "./client";
 import type { Plant } from "../types/api";
 
-export async function getPlants(): Promise<Plant[]> {
-  const response = await apiClient.get<Plant[]>("/plants/");
-  return response.data;
+const PLANTS_CACHE_KEY = "plants";
+
+export async function getPlants(
+  forceRefresh = false,
+): Promise<Plant[]> {
+  return cachedGet<Plant[]>(
+    PLANTS_CACHE_KEY,
+    "/plants/",
+    forceRefresh,
+  );
+}
+
+export function clearPlantsCache(): void {
+  clearCache(PLANTS_CACHE_KEY);
 }

@@ -12,6 +12,7 @@ from core.services.state.state_service import StateService
 from core.api.serializers import (
     PlantSerializer,
     ProductionLineSerializer,
+    StationSerializer,
 )
 from core.services.exceptions import (
     NotFoundError,
@@ -169,10 +170,11 @@ class StationListView(APIView):
 
     def get(self, request):
         try:
-            data = ProductionStructureService().get_all_stations()
+            stations = ProductionStructureService().get_all_stations()
+            serializer = StationSerializer(stations, many=True)
 
             return Response(
-                data,
+                serializer.data,
                 status=status.HTTP_200_OK,
             )
 
@@ -189,10 +191,11 @@ class StationDetailView(APIView):
 
     def get(self, request, station_id):
         try:
-            data = ProductionStructureService().get_station(station_id)
+            station = ProductionStructureService().get_station(station_id)
+            serializer = StationSerializer(station)
 
             return Response(
-                data,
+                serializer.data,
                 status=status.HTTP_200_OK,
             )
 
