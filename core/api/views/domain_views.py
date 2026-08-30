@@ -25,15 +25,12 @@ def _handle_error(exc):
     """
     Convert Service Layer exceptions into HTTP responses.
 
-    Service Layer
-        |
-        +-- ValidationError -> 400 Bad Request
-        |
-        +-- NotFoundError   -> 404 Not Found
-        |
-        +-- ServiceError    -> 500 Internal Server Error
-        |
-        +-- unexpected      -> 500 Internal Server Error
+    ServiceError hierarchy:
+        ValidationError -> 400 Bad Request
+        NotFoundError   -> 404 Not Found
+        ServiceError    -> 500 Internal Server Error
+
+    Any unexpected exception is also converted into a 500 response.
     """
 
     if isinstance(exc, ValidationError):
@@ -54,7 +51,6 @@ def _handle_error(exc):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # Defensive fallback for unexpected exceptions.
     return Response(
         {"detail": str(exc)},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -62,7 +58,7 @@ def _handle_error(exc):
 
 
 # ============================================================
-# PLANT
+# MASTER / PLANT
 # ============================================================
 
 class PlantListView(APIView):
@@ -74,10 +70,13 @@ class PlantListView(APIView):
 
     def get(self, request):
         try:
+            data = PlantService().get_all_plants()
+
             return Response(
-                PlantService().get_all_plants(),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -91,10 +90,13 @@ class PlantDetailView(APIView):
 
     def get(self, request, plant_id):
         try:
+            data = PlantService().get_plant(plant_id)
+
             return Response(
-                PlantService().get_plant(plant_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -112,10 +114,13 @@ class LineListView(APIView):
 
     def get(self, request):
         try:
+            data = ProductionStructureService().get_all_lines()
+
             return Response(
-                ProductionStructureService().get_all_lines(),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -129,10 +134,13 @@ class LineDetailView(APIView):
 
     def get(self, request, line_id):
         try:
+            data = ProductionStructureService().get_line(line_id)
+
             return Response(
-                ProductionStructureService().get_line(line_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -146,10 +154,13 @@ class StationListView(APIView):
 
     def get(self, request):
         try:
+            data = ProductionStructureService().get_all_stations()
+
             return Response(
-                ProductionStructureService().get_all_stations(),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -163,10 +174,13 @@ class StationDetailView(APIView):
 
     def get(self, request, station_id):
         try:
+            data = ProductionStructureService().get_station(station_id)
+
             return Response(
-                ProductionStructureService().get_station(station_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -184,10 +198,15 @@ class LatestStationTelemetryView(APIView):
 
     def get(self, request, station_id):
         try:
+            data = TelemetryService().get_latest_for_station(
+                station_id
+            )
+
             return Response(
-                TelemetryService().get_latest_for_station(station_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -201,10 +220,15 @@ class LatestVehicleTelemetryView(APIView):
 
     def get(self, request, vehicle_id):
         try:
+            data = TelemetryService().get_latest_for_vehicle(
+                vehicle_id
+            )
+
             return Response(
-                TelemetryService().get_latest_for_vehicle(vehicle_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -222,10 +246,15 @@ class LatestStationFeatureView(APIView):
 
     def get(self, request, station_id):
         try:
+            data = FeatureService().get_latest_station_feature(
+                station_id
+            )
+
             return Response(
-                FeatureService().get_latest_station_feature(station_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -239,10 +268,15 @@ class LatestVehicleFeatureView(APIView):
 
     def get(self, request, vehicle_id):
         try:
+            data = FeatureService().get_latest_vehicle_feature(
+                vehicle_id
+            )
+
             return Response(
-                FeatureService().get_latest_vehicle_feature(vehicle_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -260,10 +294,15 @@ class LatestStationStateView(APIView):
 
     def get(self, request, station_id):
         try:
+            data = StateService().get_latest_station_state(
+                station_id
+            )
+
             return Response(
-                StateService().get_latest_station_state(station_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -277,10 +316,15 @@ class LatestVehicleStateView(APIView):
 
     def get(self, request, vehicle_id):
         try:
+            data = StateService().get_latest_vehicle_state(
+                vehicle_id
+            )
+
             return Response(
-                StateService().get_latest_vehicle_state(vehicle_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
 
@@ -298,9 +342,14 @@ class StationVehiclesView(APIView):
 
     def get(self, request, station_id):
         try:
+            data = StateService().get_vehicles_at_station(
+                station_id
+            )
+
             return Response(
-                StateService().get_vehicles_at_station(station_id),
+                data,
                 status=status.HTTP_200_OK,
             )
+
         except (ValidationError, NotFoundError, ServiceError) as exc:
             return _handle_error(exc)
